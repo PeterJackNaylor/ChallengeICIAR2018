@@ -15,6 +15,16 @@ from sklearn.metrics import fbeta_score
 from skimage.io import imread
 from skimage import img_as_ubyte
 from skimage.transform import rescale, resize
+from sklearn.model_selection import StratifiedShuffleSplit
+from read_img import TableMetaData
+import sys
+
+MetaTable = TableMetaData(sys.argv[1], sys.argv[2])
+
+if len(sys.argv) > 3:
+    mean = np.load(sys.argv[3])
+else:
+    mean = np.zeros(shape=3, dtype='float')
 
 n_classes = 4
 FACTORS = [1., 0.75, 0.5, 0.25, 0.1]
@@ -44,8 +54,7 @@ np.random.seed(random_seed)
 
 
 # Get input data
-from sklearn.model_selection import StratifiedShuffleSplit
-from read_img import MetaTable
+
 X = MetaTable["name"]
 y = MetaTable["class"]
 
@@ -86,6 +95,8 @@ for tags in tqdm(X.values, miniters=1000):
             img_scale = img_as_ubyte(img_scale)
         else:
             img_scale = image
+        img_scale = img_scale.astype(float)
+        img_scale = img_scale - mean
         stepSize = 224
         windowSize = (224, 224)
         for x, y, x_e, y_e, x in sliding_window(image, stepSize, windowSize):

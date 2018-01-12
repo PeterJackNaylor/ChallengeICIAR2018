@@ -1,15 +1,40 @@
 #!/usr/bin/env nextflow
+IMAGE_FOLD = file('../input')
+process MeanCalculation {
+    input:
+    file fold from IMAGE_FOLD
+    output:
+    file 'mean_file.npy' into MEAN
+    script:
+    """
+    #!/usr/bin/env python
+    import numpy as np
+    from glob import glob
+    from skimage.io import imread
+
+    photos = glob('$fold/*/*.tif')
+    n = len(photos)
+    res = np.zeros(shape=3, dtype='float')
+    for i, img_path in enumerate(photos):
+        img = imread(img_path)
+        res += np.mean(img, axis=(0, 1))
+    res = res / n
+    np.save('mean_file.npy'), res)
+    """
+}
 
 ExtractResPY = file("ExtractFromResNet.py")
 
 process ExtractFromResNet {
     input:
     file py from ExtractResPY
+    file mean_file from MEAN
+    file fold from IMAGE_FOLD
     output:
     file 'ResNet_Feature.csv' into res_net
     script:
     """
-    python $py
+    python $py $fold $fold/microscopy_ground_truth.csv $mean_file
     """
 }
 
@@ -24,7 +49,7 @@ process TrainRF {
     each n from TREE_SIZE
     each method from NUMBER_P
     output:
-
+    file "score__${n}__${method}.csv" into RF_SCORES
     script:
     """
     #!/usr/bin/env python
@@ -56,6 +81,6 @@ process TrainRF {
         print ' Confusion matrix ', confusion_matrix(y_test, y_pred_test)
         val_scores[cross] = score_test
         cross += 1
-    DataFrame(val_scores).to_csv('score.csv')
+    DataFrame(val_scores).to_csv('score__${n}__${method}.csv')
     """
 }
