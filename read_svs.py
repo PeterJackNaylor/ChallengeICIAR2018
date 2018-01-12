@@ -17,7 +17,7 @@ save = True
 
 dir_img = 'PATH TO THE DATASET FOLDER'
 dir_img = '/home/tfaraujo/Desktop/BreastHistologyChallenge/ICIAR2018_BACH_Challenge/WSI/'
-
+dir_img = '../WSi'
 valid_images = ['.svs']
 
 patch_size = (2000,2000)

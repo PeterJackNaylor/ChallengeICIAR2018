@@ -52,24 +52,10 @@ process Regroup {
     input:
     file tbls from res_net .toList()
     output:
-    file 'ResNet_Feature.csv' into RES
+    file 'ResNet_Feature.out' into RES
     script:
     """
-    #!/usr/bin/env python
-    from glob import glob
-    import pandas as pd 
-
-
-    CSV = glob('*.csv')
-    tables = []
-    for f in CSV:
-        t = pd.read_csv(f, index_col=0)
-        t.set_index = [f.replace('.csv', '')]
-        tables.append(t)
-    final_tle = pd.concat(tables, axis=1)
-    final_tle.to_csv('ResNet_Feature.csv')
-
-
+    grep -v label *.csv | sed -E 's/^.+\.csv//' > ResNet_Feature.out
     """
 }
 
