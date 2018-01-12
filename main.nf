@@ -63,7 +63,7 @@ process Regroup {
     CSV = glob('*.csv')
     tables = []
     for f in CSV:
-        t = read_csv(f, index_col=0)
+        t = pd.read_csv(f, index_col=0)
         t.set_index = [f.replace('.csv', '')]
         tables.append(t)
     final_tle = pd.concat(tables, axis=1)

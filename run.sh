@@ -1,1 +1,1 @@
-nextflow run main.nf -profile minesBIG -resume
+nextflow run main.nf -profile mines -resume
