@@ -26,12 +26,15 @@ process MeanCalculation {
 
 ExtractResPY = file("ExtractFromResNet.py")
 
+IMAGES = file(IMAGE_FOLD + '/*/*.tif')
+
 process ExtractFromResNet {
     clusterOptions "-S /bin/bash"
     input:
     file py from ExtractResPY
     file mean_file from MEAN
     file fold from IMAGE_FOLD
+    file img from IMAGES
     output:
     file 'ResNet_Feature.csv' into res_net
     script:
@@ -39,7 +42,7 @@ process ExtractFromResNet {
     function pyglib {
         /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/envs/cpu_tf/bin/python \$@
     }
-    pyglib $py $fold $fold/microscopy_ground_truth.csv $mean_file
+    pyglib $py $fold $img $mean_file
     """
 }
 

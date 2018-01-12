@@ -16,13 +16,11 @@ from skimage.io import imread
 from skimage import img_as_ubyte
 from skimage.transform import rescale, resize
 from sklearn.model_selection import StratifiedShuffleSplit
-from read_img import TableMetaData
 import sys
+from os.path import basename
 
-MetaTable = TableMetaData(sys.argv[1], sys.argv[2])
-
-if len(sys.argv) > 3:
-    mean = np.load(sys.argv[3])
+if len(sys.argv) > 2:
+    mean = np.load(sys.argv[2])
 else:
     mean = np.zeros(shape=3, dtype='float')
 
@@ -51,15 +49,10 @@ random_seed = 0
 random.seed(random_seed)
 np.random.seed(random_seed)
 
-
-
-# Get input data
-
-X = MetaTable["name"]
-y = MetaTable["class"]
+lbl = ["Normal", "Benign", "Invasive", "InSitu"]
 
 flatten = lambda l: [item for sublist in l for item in sublist]
-labels = list(set(flatten([l.split(' ') for l in y.values])))
+labels = list(set(flatten([l.split(' ') for l in lbl])))
 
 label_map = {l: i for i, l in enumerate(labels)}
 inv_label_map = {i: l for l, i in label_map.items()}
@@ -74,55 +67,57 @@ model = Model(inputs=input, outputs=x)
 X_mat = []
 y_mat = []
 
-for tags in tqdm(X.values, miniters=1000):
-    if tags[0] == "n":
-        pre = "Normal"
-    elif tags[0] == "b":
-        pre = "Benign"
-    elif tags[0:2] == "iv":
-        pre = "Invasive"
-    elif tags[0:2] == "is":
-        pre = "InSitu"
-    img_path = sys.argv[1] + "/{}/{}".format(pre, tags)
-    image = imread(img_path).astype('uint8')
-    img_feat_list = []
-    for fact in FACTORS:
-        if fact != 1.:
-            img_scale = rescale(image, fact)
-            img_scale = img_as_ubyte(img_scale)
-        elif fact == 0.1:
-            img_scale = resize(image, (224,224))
-            img_scale = img_as_ubyte(img_scale)
-        else:
-            img_scale = image
-        img_scale = img_scale.astype(float)
-        img_scale = img_scale - mean
-        stepSize = 224
-        windowSize = (224, 224)
-        for x, y, x_e, y_e, x in sliding_window(image, stepSize, windowSize):
-            x = x.astype(float)
-            x = np.expand_dims(x, axis=0)
-            x = preprocess_input(x)
+tags = sys.argv[1]
+if basename(tags)[0] == "n":
+    pre = "Normal"
+elif basename(tags)[0] == "b":
+    pre = "Benign"
+elif basename(tags)[0:2] == "iv":
+    pre = "Invasive"
+elif basename(tags)[0:2] == "is":
+    pre = "InSitu"
 
-            features = model.predict(x)
-            features_reduce =  features.squeeze()
-            img_feat_list.append(features_reduce)
+image = imread(tags).astype('uint8')
+img_feat_list = []
+for fact in FACTORS:
+    if fact != 1.:
+        img_scale = rescale(image, fact)
+        img_scale = img_as_ubyte(img_scale)
+    elif fact == 0.1:
+        img_scale = resize(image, (224,224))
+        img_scale = img_as_ubyte(img_scale)
+    else:
+        img_scale = image
+    img_scale = img_scale.astype(float)
+    img_scale = img_scale - mean
+    stepSize = 224
+    windowSize = (224, 224)
+    for x, y, x_e, y_e, x in sliding_window(image, stepSize, windowSize):
+        x = x.astype(float)
+        x = np.expand_dims(x, axis=0)
+        x = preprocess_input(x)
 
-    matrix_img_feat = np.column_stack(img_feat_list)
-    for i in range(matrix_img_feat.shape[0]):
-        matrix_img_feat[i] = np.sort(matrix_img_feat[i])
+        features = model.predict(x)
+        features_reduce =  features.squeeze()
+        img_feat_list.append(features_reduce)
+
+matrix_img_feat = np.column_stack(img_feat_list)
+for i in range(matrix_img_feat.shape[0]):
+    matrix_img_feat[i] = np.sort(matrix_img_feat[i])
 
 
-    X_mat.append(matrix_img_feat.flatten())
+X_mat.append(matrix_img_feat.flatten())
 
-    targets = np.zeros(n_classes)
-    targets[label_map[pre]] = 1
-    y_mat.append(targets)
+targets = np.zeros(n_classes)
+targets[label_map[pre]] = 1
+y_mat.append(targets)
 
 
 X = np.array(X_mat)
 
 
 train_ResNet =  pd.DataFrame(X)
-train_ResNet = pd.concat([MetaTable.y, train_ResNet], axis = 1)
-train_ResNet.to_csv('ResNet_Feature_small.csv')
+data = {'label': [pre]}
+y_pd = pd.DataFrame(data, columns=['label'])
+train_ResNet = pd.concat([y_pd, train_ResNet], axis = 1)
+train_ResNet.to_csv(basename(tags).replace('.tif', '.csv'))
