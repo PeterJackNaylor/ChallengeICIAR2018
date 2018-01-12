@@ -45,6 +45,31 @@ process ExtractFromResNet {
     pyglib $py $fold $img $mean_file
     """
 }
+process Regroup {
+    clusterOptions "-S /bin/bash"
+    input:
+    file tbls from res_net .toList()
+    output:
+    file 'ResNet_Feature.csv' into RES
+    script:
+    """
+    #!/usr/bin/env python
+    from glob import glob
+    import pandas as pd 
+
+
+    CSV = glob('*.csv')
+    tables = []
+    for f in CSV:
+        t = read_csv(f, index_col=0)
+        t.set_index = [f.replace('.csv', '')]
+        tables.append(t)
+    final_tle = pd.concat(tables, axis=1)
+    final_tle.to_csv('ResNet_Feature.csv')
+
+
+    """
+}
 
 N_SPLIT = 5
 TREE_SIZE = [10, 100, 200, 500, 1000, 10000]
@@ -53,7 +78,7 @@ NUMBER_P = ["auto", "log2"]
 process TrainRF {
     clusterOptions "-S /bin/bash"
     input:
-    file table from res_net
+    file table from RES
     val n_splits from N_SPLIT
     each n from TREE_SIZE
     each method from NUMBER_P
