@@ -83,7 +83,7 @@ for tags in tqdm(X.values, miniters=1000):
         pre = "Invasive"
     elif tags[0:2] == "is":
         pre = "InSitu"
-    img_path = "../input" + "/{}/{}".format(pre, tags)
+    img_path = sys.argv[1] + "/{}/{}".format(pre, tags)
     image = imread(img_path).astype('uint8')
     img_feat_list = []
     for fact in FACTORS:

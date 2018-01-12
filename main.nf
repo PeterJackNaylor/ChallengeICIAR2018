@@ -1,6 +1,7 @@
 #!/usr/bin/env nextflow
 IMAGE_FOLD = file('../input')
 process MeanCalculation {
+    clusterOptions "-S /bin/bash"
     input:
     file fold from IMAGE_FOLD
     output:
@@ -19,13 +20,14 @@ process MeanCalculation {
         img = imread(img_path)
         res += np.mean(img, axis=(0, 1))
     res = res / n
-    np.save('mean_file.npy'), res)
+    np.save('mean_file.npy', res)
     """
 }
 
 ExtractResPY = file("ExtractFromResNet.py")
 
 process ExtractFromResNet {
+    clusterOptions "-S /bin/bash"
     input:
     file py from ExtractResPY
     file mean_file from MEAN
@@ -34,7 +36,10 @@ process ExtractFromResNet {
     file 'ResNet_Feature.csv' into res_net
     script:
     """
-    python $py $fold $fold/microscopy_ground_truth.csv $mean_file
+    function pyglib {
+        /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/envs/cpu_tf/bin/python \$@
+    }
+    pyglib $py $fold $fold/microscopy_ground_truth.csv $mean_file
     """
 }
 
@@ -43,6 +48,7 @@ TREE_SIZE = [10, 100, 200, 500, 1000, 10000]
 NUMBER_P = ["auto", "log2"]
 
 process TrainRF {
+    clusterOptions "-S /bin/bash"
     input:
     file table from res_net
     val n_splits from N_SPLIT

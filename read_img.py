@@ -33,5 +33,5 @@ def TableMetaData(path=PATH, csv=CSV):
     table.columns = ['name', 'class']
     table['y'] = table.apply(lambda row: Map(row['class']), axis=1)
     return table
-
-MetaTable = TableMetaData(PATH, CSV)
+if __name__ == "__main__":
+    MetaTable = TableMetaData(PATH, CSV)
