@@ -45,6 +45,8 @@ process ExtractFromResNet {
     pyglib $py $img $mean_file
     """
 }
+
+
 process Regroup {
     clusterOptions "-S /bin/bash"
     input:
