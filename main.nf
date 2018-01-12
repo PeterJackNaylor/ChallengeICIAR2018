@@ -36,13 +36,13 @@ process ExtractFromResNet {
     file fold from IMAGE_FOLD
     file img from IMAGES
     output:
-    file 'ResNet_Feature.csv' into res_net
+    file '*.csv' into res_net
     script:
     """
     function pyglib {
         /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/envs/cpu_tf/bin/python \$@
     }
-    pyglib $py $fold $img $mean_file
+    pyglib $py $img $mean_file
     """
 }
 
