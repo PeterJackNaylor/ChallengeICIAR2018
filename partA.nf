@@ -66,6 +66,7 @@ COMP = Channel.from(15..24)
 TREE_SIZE .combine(NUMBER_P) .set{ Param }
 
 process TrainRF {
+    publishDir '../partA/Results'
     clusterOptions "-S /bin/bash -q all.q@compute-0-${key}"
     input:
     file table from RES
