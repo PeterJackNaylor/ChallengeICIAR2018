@@ -87,7 +87,7 @@ process TrainRF {
 
     table = read_csv('${table}', header=None, index_col=0)
     y = table[1]
-    X = table.drop('y', axis=1)
+    X = table.drop(1, axis=1)
     skf = StratifiedKFold(n_splits=${n_splits})
     val_scores = np.zeros(${n_splits})
     cross = 0
