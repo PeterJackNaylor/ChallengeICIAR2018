@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('agg')
 import openslide
 from openslide import open_slide # http://openslide.org/api/python/
 from skimage.transform import resize
@@ -55,7 +57,6 @@ out_path = './patch_extract/' + basename(img_path).replace('.svs', '.png')
 GT_path = os.path.join(fold, 'gt_thumbnails/' + basename(img_path).replace('.svs', '.png'))
 
 
-number_of_imgs = 1000
 scan = openslide.OpenSlide(img_path)
 last_dim_n = len(scan.level_dimensions) - 1
 last_dim = scan.level_dimensions[last_dim_n]

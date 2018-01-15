@@ -7,7 +7,7 @@ CUTWSI = file('cutWSI.py')
 
 process cutWSI {
     clusterOptions "-S /bin/bash"
-    publishDir "../partB/", pattern: "patch_extract/A*.png"
+    publishDir "../../partB/"
     input:
     file fold from IMAGE_FOLD
     val num from NUMBER
@@ -15,8 +15,8 @@ process cutWSI {
     file py from CUTWSI
 
     output:
-    file './samples/*.png' into INPUT_DL
-    file './patch_extract/*.png'
+    file "samples/*.png" into INPUT_DL
+    file "patch_extract/*.png"
 
     """
     python $py $fold $num $samples
