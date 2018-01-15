@@ -23,6 +23,9 @@ process cutWSI {
     """
 }
 
+SPLIT = 5
+EPOCH = 10
+BATCH = 32
 RESNET_50 = file('resnet_50.py')
 
 process deepTrain {
