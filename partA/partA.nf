@@ -30,6 +30,7 @@ IMAGES = file(IMAGE_FOLD + '/*/*.tif')
 
 process ExtractFromResNet {
     clusterOptions "-S /bin/bash"
+    queue "all.q"
     input:
     file py from ExtractResPY
     file mean_file from MEAN

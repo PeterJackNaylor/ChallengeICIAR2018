@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import pdb
+from optparse import OptionParser
 from keras.models import Sequential
 from keras.optimizers import SGD
 from keras.layers import Input, Dense, Convolution2D, MaxPooling2D, AveragePooling2D, ZeroPadding2D, Dropout, Flatten, merge, Reshape, Activation
 from keras.layers.normalization import BatchNormalization
 from keras.models import Model
 from keras import backend as K
-from sklearn.metrics import log_loss
+from sklearn.metrics import log_loss, accuracy_score
 import sys
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
 # from load_cifar10 import load_cifar10_data
 from load_dataICIAR import load_ICIAR_data
-
+import pandas as pd
 
 
 def identity_block(input_tensor, kernel_size, filters, stage, block):
@@ -85,7 +86,7 @@ def conv_block(input_tensor, kernel_size, filters, stage, block, strides=(2, 2))
     x = Activation('relu')(x)
     return x
 
-def resnet50_model(img_rows, img_cols, color_type=1, num_classes=None):
+def resnet50_model(img_rows, img_cols, color_type=1, num_classes=None, lr=1e-3, mom=0.9, w_d=1e-6):
     """
     Resnet 50 Model for Keras
 
@@ -165,7 +166,7 @@ def resnet50_model(img_rows, img_cols, color_type=1, num_classes=None):
     model = Model(img_input, x_newfc)
 
     # Learning rate is changed to 0.001
-    sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=lr, decay=w_d, momentum=mom, nesterov=True)
     model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
   
     return model
@@ -173,25 +174,42 @@ def resnet50_model(img_rows, img_cols, color_type=1, num_classes=None):
 if __name__ == '__main__':
 
     # Example to fine-tune on 3000 samples from Cifar10
+    parser = OptionParser()
+    parser.add_option('--lr', dest="lr", type="float")
+    parser.add_option('--mom', dest="momentum", type="float")
+    parser.add_option('--weight_decay', dest="weight_decay", type="float")
+    parser.add_option('--output', dest="output", type="str")
+    parser.add_option('--split', dest="split", type="int")
+    parser.add_option('--epoch', dest="epoch", type="int")
+    parser.add_option('--bs', dest="bs", type="int")
+    (options, args) = parser.parse_args()
 
     img_rows, img_cols = 224, 224 # Resolution of inputs
     channel = 3
     num_classes = 4
     batch_size = 16 
-    batch_size = int(sys.argv[3])
-    nb_epoch = int(sys.argv[2])
-    n_split = int(sys.argv[1])
+    batch_size = options.bs
+    nb_epoch = options.epoch
+    n_split = options.split
     # Load Cifar10 data. Please implement your own load_data() module for your own dataset
     X, y = load_ICIAR_data()
+    print "Finished loading data"
     def f(row): return np.where(row == 1)[0][0]
     y_strat = map(f, y)
     skf = StratifiedKFold(n_splits=n_split)
     val_scores = np.zeros(n_split)
+    score = np.zeros(n_split, dtype='float')
+    acc = np.zeros(n_split, dtype='float')
+    
+    k = 0
     for train_index, test_index in skf.split(np.zeros(len(y_strat)), y_strat):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
         # Load our model
-        model = resnet50_model(img_rows, img_cols, channel, num_classes)
+        lr = options.lr
+        mom = options.momentum
+        w_d = options.weight_decay
+        model = resnet50_model(img_rows, img_cols, channel, num_classes, lr, mom, w_d)
 
         # Start Fine-tuning
         model.fit(X_train, y_train,
@@ -206,6 +224,7 @@ if __name__ == '__main__':
         predictions_valid = model.predict(X_test, batch_size=batch_size, verbose=1)
 
         # Cross-entropy loss score
-        score = log_loss(Y_test, predictions_valid)
-        pdb.set_trace()
-
+        score[k] = log_loss(y_test, predictions_valid)
+        acc[k] = accuracy_score(map(np.argmax, y_test), map(np.argmax, predictions_valid))
+        k += 1
+    pd.DataFrame({'cross-entropy': score, 'accuracy': acc}).to_csv(options.output)

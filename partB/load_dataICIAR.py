@@ -5,7 +5,7 @@ from skimage.io import imread
 from os.path import basename
 import numpy as np
 
-PATH = './samples/*.png'
+PATH = './*.png'
 
 num_classes = 4
 num_channels = 3
@@ -14,6 +14,7 @@ img_height = 224
 
 def load_ICIAR_data():
     folder = glob(PATH)
+#    folder = np.random.choice(folder, 100)
     n = len(folder)
     X = np.zeros(shape=(n, img_height, img_width, num_channels), dtype='uint8')
     y = np.zeros(shape=(n, num_classes), dtype='uint8')
@@ -21,7 +22,7 @@ def load_ICIAR_data():
         img = imread(f).astype('uint8')
         X[k] = img[:,:,0:3]
         fname = basename(f).replace('.png', '')
-        lbl, ind = fname.split('_')
+        lbl, svs, ind = fname.split('_')
         y[k, int(lbl)] = 1
     return X, y
         
