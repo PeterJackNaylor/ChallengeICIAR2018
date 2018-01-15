@@ -48,28 +48,30 @@ process ExtractFromResNet {
 
 
 process Regroup {
-    clusterOptions "-S /bin/bash"
+    clusterOptions "-S /bin/bash -q all.q@compute-0-24"
     input:
     file tbls from res_net .toList()
     output:
     file 'ResNet_Feature.out' into RES
     script:
     """
-    grep -v label *.csv | sed -E 's/^.+\.csv//' > ResNet_Feature.out
+    grep -v label *.csv | sed -E 's/\\.csv:0//' > ResNet_Feature.out
     """
 }
 
 N_SPLIT = 5
-TREE_SIZE = [10, 100, 200, 500, 1000, 10000]
-NUMBER_P = ["auto", "log2"]
+TREE_SIZE = Channel.from([10, 100, 200, 500, 1000, 10000])
+NUMBER_P = Channel.from(["auto", "log2"])
+COMP = Channel.from(15..24)
+TREE_SIZE .combine(NUMBER_P) .set{ Param }
 
 process TrainRF {
-    clusterOptions "-S /bin/bash"
+    clusterOptions "-S /bin/bash -q all.q@compute-0-${key}"
     input:
     file table from RES
     val n_splits from N_SPLIT
-    each n from TREE_SIZE
-    each method from NUMBER_P
+    set n, method from Param
+    val key from COMP
     output:
     file "score__${n}__${method}.csv" into RF_SCORES
     script:
@@ -83,8 +85,8 @@ process TrainRF {
     import numpy as np
 
 
-    table = read_csv('${table}', index_col=0)
-    y = table['y']
+    table = read_csv('${table}', header=None, index_col=0)
+    y = table[1]
     X = table.drop('y', axis=1)
     skf = StratifiedKFold(n_splits=${n_splits})
     val_scores = np.zeros(${n_splits})
