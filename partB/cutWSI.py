@@ -49,7 +49,9 @@ num = int(sys.argv[2])
 number_of_imgs = int(sys.argv[3])
 os.mkdir('./patch_extract/')
 os.mkdir('./samples/')
+
 img_path = os.path.join(fold, 'A{:02d}.svs').format(num)
+
 
 out_path = './patch_extract/' + basename(img_path).replace('.svs', '.png')
 GT_path = os.path.join(fold, 'gt_thumbnails/' + basename(img_path).replace('.svs', '.png'))
