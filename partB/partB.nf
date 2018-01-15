@@ -1,5 +1,5 @@
 
-IMAGE_FOLD = file('/share/data40T_v2/Peter/ICIAR2018/partB/input')
+IMAGE_FOLD = file('/share/data40T_v2/Peter/ICIAR2018/partB/WSI')
 NUMBER = Channel.from(1..10)
 SAMPLES_PER_CLASS = 1000
 CUTWSI = file('cutWSI.py')

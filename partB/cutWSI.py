@@ -13,6 +13,7 @@ from glob import glob
 from os.path import basename
 import sys
 import os
+import pdb
 
 def visualise_cut(slide, list_pos, res_to_view=None, color='red', size=12, title=""):
     map_col = {0: "white", 1:"red", 2:"green", 3:"blue"}
@@ -39,7 +40,6 @@ def visualise_cut(slide, list_pos, res_to_view=None, color='red', size=12, title
     return fig
 
 
-files_to_loop = glob('../WSI/A*.svs')
 dic = {0:0, 1:0, 2:0, 3:0} # counts
 
 fold = sys.argv[1]
@@ -47,14 +47,15 @@ num = int(sys.argv[2])
 number_of_imgs = int(sys.argv[3])
 os.mkdir('./patch_extract/')
 os.mkdir('./samples/')
-img_path = os.path.join(fold, 'A{:02d}.svs')
+
+img_path = os.path.join(fold, 'A{:02d}.svs').format(num)
+
 
 out_path = './patch_extract/' + basename(img_path).replace('.svs', '.png')
-GT_path = os.path.join(fold, 'WSI/gt_thumbnails/' + basename(img_path).replace('.svs', '.png'))
+GT_path = os.path.join(fold, 'gt_thumbnails/' + basename(img_path).replace('.svs', '.png'))
 
 
 number_of_imgs = 1000
-
 scan = openslide.OpenSlide(img_path)
 last_dim_n = len(scan.level_dimensions) - 1
 last_dim = scan.level_dimensions[last_dim_n]
