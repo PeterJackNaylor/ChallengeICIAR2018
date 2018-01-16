@@ -49,6 +49,7 @@ process ExtractFromResNet {
 
 
 process Regroup {
+    publishDir '../../partA/table', overwrite:true
     clusterOptions "-S /bin/bash -q all.q@compute-0-24"
     input:
     file tbls from res_net .toList()
@@ -67,7 +68,7 @@ COMP = Channel.from(15..24)
 TREE_SIZE .combine(NUMBER_P) .set{ Param }
 
 process TrainRF {
-    publishDir '../partA/Results'
+    publishDir '../../partA/Results', overwrite: true
     clusterOptions "-S /bin/bash -q all.q@compute-0-${key}"
     input:
     file table from RES

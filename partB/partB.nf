@@ -7,7 +7,7 @@ CUTWSI = file('cutWSI.py')
 
 process cutWSI {
     clusterOptions "-S /bin/bash"
-    publishDir "../../partB/", pattern:"A*.png"
+    publishDir "../../partB/", pattern:"A*.png", overwrite:true
     queue 'all.q'
     input:
     file fold from IMAGE_FOLD
@@ -16,7 +16,7 @@ process cutWSI {
     file py from CUTWSI
 
     output:
-    file "samples/*.png" into INPUT_DL mode flatten
+    file "samples/*.png" into INPUT_DL
     file "patch_extract/*.png"
 
     """
@@ -29,7 +29,7 @@ REMOVEWHITEPICS = file('removeWhitePics.py')
 
 process removeWhitePics {
     clusterOptions "-S /bin/bash"
-    publishDir "../../partB/samples"
+    publishDir "../../partB/samples", overwrite:true
     queue 'all.q'
     input:
     file py from REMOVEWHITEPICS
@@ -57,7 +57,7 @@ WEIGHT_DECAY = [0.0005, 0.00005, 0.000005]
 
 process deepTrain {
     clusterOptions "-S /bin/bash"
-    publishDir "../../partB/ResultTest"
+    publishDir "../../partB/ResultTest", overwrite:true
     queue 'cuda.q'
     maxForks 1
     input:
@@ -66,7 +66,7 @@ process deepTrain {
     val epoch from EPOCH
     val batch_size from BATCH
     file _ from PRETRAINED
-    file images from INPUT_DL .toList()
+    file images from INPUT_VALID .toList()
     each lr from LEARNING_RATE
     each mom from MOMENTUM
     each w_d from WEIGHT_DECAY
