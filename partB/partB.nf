@@ -35,7 +35,7 @@ process deepTrain {
     clusterOptions "-S /bin/bash"
     publishDir "../../partB/ResultTest"
     queue 'cuda.q'
-    maxForks 2
+    maxForks 1
     input:
     file py from RESNET_50
     val split from SPLIT
