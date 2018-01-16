@@ -111,3 +111,30 @@ process TrainRF {
     DataFrame(val_scores).to_csv('score__${n}__${method}.csv')
     """
 }
+
+process Regroup {
+    publishDir '../../partA/Results', overwrite: true
+    clusterOptions "-S /bin/bash"
+    input:
+    file _ from RF_SCORES .toList()
+    output:
+    file "all_table.csv" into FINAL_TABLE
+    script:
+    """
+    #!/usr/bin/env python
+    from pandas import read_csv, DataFrame
+    import numpy as np
+    from glob import glob
+
+    files = glob('*.csv')
+    l_tab = []
+    for f in files:
+        table = read_csv(f, index_col=0)
+        name, ext = f.split('.')
+        __, n_name, p_name = name.split('__')
+        table.columns = ['n_{}_{}'.format(n_name, p_name)]
+        l_tab.append(table)
+    all_tab = pd.concat(l_tab, axis=1)
+    all_tab.to_csv('all_table.csv')
+    """
+}
