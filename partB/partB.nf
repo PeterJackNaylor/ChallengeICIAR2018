@@ -24,7 +24,7 @@ process cutWSI {
     """
 }
 
-THRESH = 0.5
+THRESH = 0.6
 REMOVEWHITEPICS = file('removeWhitePics.py')
 
 process removeWhitePics {

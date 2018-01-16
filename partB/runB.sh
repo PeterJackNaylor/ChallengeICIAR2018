@@ -1,1 +1,1 @@
-nextflow run partB.nf -profile mines -resume
+nextflow run partB.nf -profile mines -resume -N peter.jack.naylor@gmail.com

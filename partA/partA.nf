@@ -91,7 +91,7 @@ process TrainRF {
     table = read_csv('${table}', header=None, index_col=0)
     y = table[1]
     X = table.drop(1, axis=1)
-    skf = StratifiedKFold(n_splits=${n_splits})
+    skf = StratifiedKFold(n_splits=${n_splits}, shuffle=True, random_state=42)
     val_scores = np.zeros(${n_splits})
     cross = 0
     for train_index, test_index in skf.split(X, y):
@@ -112,7 +112,7 @@ process TrainRF {
     """
 }
 
-process Regroup {
+process RegroupTables {
     publishDir '../../partA/Results', overwrite: true
     clusterOptions "-S /bin/bash"
     input:
@@ -122,7 +122,7 @@ process Regroup {
     script:
     """
     #!/usr/bin/env python
-    from pandas import read_csv, DataFrame
+    from pandas import read_csv, concat
     import numpy as np
     from glob import glob
 
@@ -134,7 +134,9 @@ process Regroup {
         __, n_name, p_name = name.split('__')
         table.columns = ['n_{}_{}'.format(n_name, p_name)]
         l_tab.append(table)
-    all_tab = pd.concat(l_tab, axis=1)
+    all_tab = concat(l_tab, axis=1)
+    all_tab.ix['mean'] = all_tab.mean()
     all_tab.to_csv('all_table.csv')
     """
 }
+
