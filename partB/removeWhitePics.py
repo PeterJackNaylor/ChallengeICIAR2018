@@ -9,7 +9,7 @@ import numpy as np
 thresh = float(sys.argv[1])
 
 def move_img(source_file, destination):
-    rename(source_file, path.join(destination, path.basename(source_file)))
+    rename(source_file, path.join(destination, path.basename(source_file).replace('.png', 'v2.png')))
 
 def discard(img_path):
     move_img(img_path, "./discard")
