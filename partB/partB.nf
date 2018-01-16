@@ -7,7 +7,8 @@ CUTWSI = file('cutWSI.py')
 
 process cutWSI {
     clusterOptions "-S /bin/bash"
-    publishDir "../../partB/"
+    publishDir "../../partB/", pattern:"A*.png"
+    queue 'all.q'
     input:
     file fold from IMAGE_FOLD
     val num from NUMBER
@@ -23,6 +24,28 @@ process cutWSI {
     """
 }
 
+THRESH = 0.5
+REMOVEWHITEPICS = file('removeWhitePics.py')
+
+process removeWhitePics {
+    clusterOptions "-S /bin/bash"
+    publishDir "../../partB/samples"
+    queue 'all.q'
+    input:
+    file py from REMOVEWHITEPICS
+    file _ from INPUT_DL 
+    val thresh from THRESH
+    output:
+    file "valid/*.png" into INPUT_VALID mode flatten
+    file "discard/*.png" 
+    """
+    python $py $thresh
+    """
+}
+
+
+
+
 SPLIT = 5
 EPOCH = 10
 BATCH = 32
@@ -31,6 +54,7 @@ PRETRAINED = file('imagenet_models')
 LEARNING_RATE= [0.01, 0.001, 0.0001]
 MOMENTUM = [0.5, 0.9, 0.99]
 WEIGHT_DECAY = [0.0005, 0.00005, 0.000005]
+
 process deepTrain {
     clusterOptions "-S /bin/bash"
     publishDir "../../partB/ResultTest"
