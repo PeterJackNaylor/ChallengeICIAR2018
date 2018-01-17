@@ -1,6 +1,6 @@
 
 
-IMAGE_FOLD = file("../../partA/input/*/*.png")
+IMAGE_FOLD = file("../../partA/input/*/*.tif")
 WEIGHT_NUC = file("../../segmentation_table/metadata/DIST__16_0.00005_0.001")
 MEAN_FILE = file("../../segmentation_table/metadata/mean_file.npy")
 SEGMENT = file("PredictFromDist.py")

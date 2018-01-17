@@ -46,13 +46,13 @@ process removeWhitePics {
 
 
 
-SPLIT = 5
-EPOCH = 10
+SPLIT = 2
+EPOCH = 5
 BATCH = 32
 RESNET_50 = file('resnet_50.py')
 PRETRAINED = file('imagenet_models')
 LEARNING_RATE= [0.01, 0.001, 0.0001]
-MOMENTUM = [0.5, 0.9, 0.99]
+MOMENTUM = [0.9, 0.99]
 WEIGHT_DECAY = [0.0005, 0.00005, 0.000005]
 
 process deepTrain {

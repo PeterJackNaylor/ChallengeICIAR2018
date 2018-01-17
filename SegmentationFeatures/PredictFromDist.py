@@ -9,7 +9,7 @@ from skimage.io import imsave
 from glob import glob
 from os.path import basename
 import sys
-
+import os
 img_path = sys.argv[1]
 WEIGHT_LOG = sys.argv[2]
 MEAN_FILE = sys.argv[3]
@@ -60,4 +60,5 @@ pred = model.sess.run([model.predictions],
 pred = pred[0][0]
 pred[pred < 0] = 0
 pred = pred.astype('uint8')
+os.mkdir("out")
 out = PP(pred, 1, 0, rgb=img[0:-12,0:-12], save_path="out", name=basename(img_path).replace('.tif', ''))
