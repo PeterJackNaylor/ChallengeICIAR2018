@@ -8,6 +8,11 @@ from os.path import join
 from skimage.io import imsave
 from glob import glob
 from os.path import basename
+import sys
+import os
+img_path = sys.argv[1]
+WEIGHT_LOG = sys.argv[2]
+MEAN_FILE = sys.argv[3]
 
 def UNetAugment(img):
     Tr = Transf('')
@@ -28,8 +33,9 @@ def PP(dist, p1, p2, rgb=None, save_path=None, name=None):
     return PRED
 
 
-WEIGHT_LOG = "../metadata/DIST__16_0.00005_0.001"
-size = imread(glob("../Photos/*/*.tif")[0]).shape[:2]
+
+img = imread(img_path).astype('uint8')
+size = img.shape[:2]
 model = UNetDistance("", 
                      BATCH_SIZE=1,
                      IMAGE_SIZE=size,
@@ -38,22 +44,21 @@ model = UNetDistance("",
                      N_FEATURES=16)
 
 
-MEAN_FILE = "../metadata/mean_file.npy"
-for img_path in glob("../Photos/*/*.tif"):
-    img = imread(img_path).astype('uint8')
-    img_a = UNetAugment(img)[0:-12,0:-12]
-    img_f = img_a.astype(float) - np.load(MEAN_FILE)
-    Xval = img_f[np.newaxis, :]
+
+img_a = UNetAugment(img)[0:-12,0:-12]
+img_f = img_a.astype(float) - np.load(MEAN_FILE)
+Xval = img_f[np.newaxis, :]
 
 
 
 
 
-    feed_dict = {model.input_node: Xval,
-                 model.is_training: False}
-    pred = model.sess.run([model.predictions],
-                           feed_dict=feed_dict)
-    pred = pred[0][0]
-    pred[pred < 0] = 0
-    pred = pred.astype('uint8')
-    out = PP(pred, 1, 0, rgb=img[0:-12,0:-12], save_path="out", name=basename(img_path).replace('.tif', ''))
+feed_dict = {model.input_node: Xval,
+             model.is_training: False}
+pred = model.sess.run([model.predictions],
+                       feed_dict=feed_dict)
+pred = pred[0][0]
+pred[pred < 0] = 0
+pred = pred.astype('uint8')
+os.mkdir("out")
+out = PP(pred, 1, 0, rgb=img[0:-12,0:-12], save_path="out", name=basename(img_path).replace('.tif', ''))

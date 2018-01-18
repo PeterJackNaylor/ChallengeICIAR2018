@@ -51,8 +51,9 @@ EPOCH = 10
 BATCH = 16
 RESNET_50 = file('resnet_50.py')
 PRETRAINED = file('imagenet_models')
-LEARNING_RATE= [0.01, 0.001, 0.0001]
-MOMENTUM = [0.9, 0.99]
+LEARNING_RATE= [0.0001, 0.00001]
+//LEARNING_RATE= [0.01, 0.001, 0.0001]
+MOMENTUM = [0.99]
 WEIGHT_DECAY = [0.00005]
 
 process deepTrain {

@@ -18,14 +18,15 @@ from skimage.transform import rescale, resize
 from sklearn.model_selection import StratifiedShuffleSplit
 import sys
 from os.path import basename
-
+import pdb
 if len(sys.argv) > 2:
     mean = np.load(sys.argv[2])
 else:
     mean = np.zeros(shape=3, dtype='float')
 
 n_classes = 4
-FACTORS = [1., 0.75, 0.5, 0.25, 0.1]
+FACTORS = [0.25]
+#FACTORS = [1., 0.75, 0.5, 0.25, 0.1]
 
 def sliding_window(image, stepSize, windowSize):
     # slide a window across the imag
@@ -115,9 +116,13 @@ y_mat.append(targets)
 
 X = np.array(X_mat)
 
-
 train_ResNet =  pd.DataFrame(X)
-data = {'label': [pre]}
+data = {'label': [label_map[pre]]}
 y_pd = pd.DataFrame(data, columns=['label'])
 train_ResNet = pd.concat([y_pd, train_ResNet], axis = 1)
-train_ResNet.to_csv(basename(tags).replace('.tif', '.csv'))
+p = train_ResNet.shape[1]
+vec_res = train_ResNet.as_matrix().reshape(p)
+vec_res_p = np.zeros(p+1, dtype='float')
+vec_res_p[0] = label_map[pre]*100 + int(tags.split(".")[0][-3:]) - 1
+vec_res_p[1:] = vec_res
+np.save(basename(tags).replace('.tif', '.npy'), vec_res_p)

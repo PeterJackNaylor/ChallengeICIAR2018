@@ -37,7 +37,7 @@ process ExtractFromResNet {
     file fold from IMAGE_FOLD
     file img from IMAGES
     output:
-    file '*.csv' into res_net
+    file '*.npy' into res_net
     script:
     """
     function pyglib {
@@ -54,10 +54,18 @@ process Regroup {
     input:
     file tbls from res_net .toList()
     output:
-    file 'ResNet_Feature.out' into RES
+    file 'ResNet_Feature.npy' into RES
     script:
     """
-    grep -v label *.csv | sed -E 's/\\.csv:0//' > ResNet_Feature.out
+    #!/usr/bin/env python
+    import numpy as np
+    from glob import glob
+    files = glob('*.npy')
+    size = np.load(files[0]).shape[0]
+    resnet = np.zeros((len(files), size), dtype='float')
+    for k, f in enumerate(files):
+        resnet[k] = np.load(f)
+    np.save('ResNet_Feature.npy', resnet)
     """
 }
 
@@ -87,16 +95,16 @@ process TrainRF {
     from sklearn.metrics import confusion_matrix
     import numpy as np
 
-
-    table = read_csv('${table}', header=None, index_col=0)
-    y = table[1]
-    X = table.drop(1, axis=1)
+    table_npy = np.load('${table}')
+    id = table_npy[:,0].copy()
+    y = table_npy[:,1].copy()
+    X = table_npy[:,2:]
     skf = StratifiedKFold(n_splits=${n_splits}, shuffle=True, random_state=42)
     val_scores = np.zeros(${n_splits})
     cross = 0
     for train_index, test_index in skf.split(X, y):
-        X_train, X_test = X.ix[train_index], X.ix[test_index]
-        y_train, y_test = y.ix[train_index], y.ix[test_index]
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
         clf = RandomForestClassifier(n_estimators=${n}, max_features='${method}')
         clf.fit(X_train, y_train)
         print 'Trained model for fold: {}'.format(cross)
