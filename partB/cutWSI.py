@@ -94,7 +94,7 @@ for k, c in enumerate(channels):
     c_cop = c.copy()
     while ((c_cop > 0).sum() > 0 and i < number_of_imgs):
         x_l, y_l = np.where(c > 0)  
-        pic = random.randint(0, len(x_l))
+        pic = random.randint(0, len(x_l) - 1)
         x = x_l[pic] - s_0_x // 2
         y = y_l[pic] - s_0_y // 2
         c_cop[x:(x+s_0_x), y:(y+s_0_y)] = 0
