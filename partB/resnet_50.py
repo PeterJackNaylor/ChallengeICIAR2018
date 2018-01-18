@@ -229,7 +229,7 @@ if __name__ == '__main__':
         acc[k] = accuracy_score(map(np.argmax, y_test), map(np.argmax, predictions_valid))
         fold_name = options.output_mod
         fold_name = fold_name.replace('.h5', '_fold_{}.h5').format(k)
-        model.save()
+        model.save(fold_name)
         k += 1
 
     pd.DataFrame({'cross-entropy': score, 'accuracy': acc}).to_csv(options.output)
