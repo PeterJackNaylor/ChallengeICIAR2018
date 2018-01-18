@@ -179,6 +179,7 @@ if __name__ == '__main__':
     parser.add_option('--mom', dest="momentum", type="float")
     parser.add_option('--weight_decay', dest="weight_decay", type="float")
     parser.add_option('--output', dest="output", type="str")
+    parser.add_option('--output_mod', dest="output_mod", type="str")
     parser.add_option('--split', dest="split", type="int")
     parser.add_option('--epoch', dest="epoch", type="int")
     parser.add_option('--bs', dest="bs", type="int")
@@ -226,5 +227,9 @@ if __name__ == '__main__':
         # Cross-entropy loss score
         score[k] = log_loss(y_test, predictions_valid)
         acc[k] = accuracy_score(map(np.argmax, y_test), map(np.argmax, predictions_valid))
+        fold_name = options.output_mod
+        fold_name = fold_name.replace('.h5', '_fold_{}.h5').format(k)
+        model.save()
         k += 1
+
     pd.DataFrame({'cross-entropy': score, 'accuracy': acc}).to_csv(options.output)
