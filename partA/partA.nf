@@ -54,7 +54,7 @@ process Regroup {
     input:
     file tbls from res_net .toList()
     output:
-    file 'ResNet_Feature.npy' into RES
+    file 'ResNet_Feature.npy' into RES, RES2
     script:
     """
     #!/usr/bin/env python
@@ -68,6 +68,25 @@ process Regroup {
     np.save('ResNet_Feature.npy', resnet)
     """
 }
+
+SUMMARIZE = file('Summarize_resnet.py')
+FUNCTIONS = ["All", "Max", "Mean", "Median"]
+
+process StatDescr {
+    publishDir '../../partA/table', overwrite:true
+    clusterOptions "-S /bin/bash -q all.q@compute-0-24"
+    input:
+    file table from RES2
+    file py from SUMMARIZE
+    each type from FUNCTIONS
+    output:
+    file 'res_${type}.npy' into RES, RES2
+    script:
+    """
+    python $py $table $type res_${type}.npy
+    """
+}
+
 
 N_SPLIT = 5
 TREE_SIZE = Channel.from([10, 100, 200, 500, 1000, 10000])
