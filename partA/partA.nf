@@ -54,7 +54,7 @@ process Regroup {
     input:
     file tbls from res_net .toList()
     output:
-    file 'ResNet_Feature.npy' into RES, RES2
+    file 'res_untouched.npy' into RES, RES2
     script:
     """
     #!/usr/bin/env python
@@ -65,7 +65,7 @@ process Regroup {
     resnet = np.zeros((len(files), size), dtype='float')
     for k, f in enumerate(files):
         resnet[k] = np.load(f)
-    np.save('ResNet_Feature.npy', resnet)
+    np.save('res_untouched.npy', resnet)
     """
 }
 
@@ -80,30 +80,32 @@ process StatDescr {
     file py from SUMMARIZE
     each type from FUNCTIONS
     output:
-    file 'res_${type}.npy' into RES, RES2
+    file "res_${type}.npy" into other_tabs
     script:
     """
     python $py $table $type res_${type}.npy
     """
 }
 
+RES.concat(other_tabs) .set{ALL_POS}
 
 N_SPLIT = 5
 TREE_SIZE = Channel.from([10, 100, 200, 500, 1000, 10000])
 NUMBER_P = Channel.from(["auto", "log2"])
-COMP = Channel.from(15..24)
-TREE_SIZE .combine(NUMBER_P) .set{ Param }
+Channel.from(15..24) .concat(Channel.from(15..24)) .concat(Channel.from(15..24)) .concat(Channel.from(15..24)) .concat(Channel.from(15..24)) .set {COMP}
+TREE_SIZE .combine(NUMBER_P) .merge(COMP).set{ Param }
+ALL_POS .combine(Param) .set{ TAB_Param}
+
+//TAB_Param .map{it -> file(it[0]).split()} .println()
 
 process TrainRF {
     publishDir '../../partA/Results', overwrite: true
     clusterOptions "-S /bin/bash -q all.q@compute-0-${key}"
     input:
-    file table from RES
     val n_splits from N_SPLIT
-    set n, method from Param
-    val key from COMP
+    set file(table), n, method, key from TAB_Param
     output:
-    file "score__${n}__${method}.csv" into RF_SCORES
+    file "score__${n}__${method}__${table.getBaseName().split('_')[1]}.csv" into RF_SCORES
     script:
     """
     #!/usr/bin/env python
@@ -135,17 +137,25 @@ process TrainRF {
         print ' Confusion matrix ', confusion_matrix(y_test, y_pred_test)
         val_scores[cross] = score_test
         cross += 1
-    DataFrame(val_scores).to_csv('score__${n}__${method}.csv')
+    DataFrame(val_scores).to_csv('score__${n}__${method}__${table.getBaseName().split('_')[1]}.csv')
     """
 }
+
+def getKey( file ) {
+      file.name.split('__')[3] 
+}
+/* Regrouping files by patient for tiff stiching */
+RF_SCORES  .map { file -> tuple(getKey(file), file) }
+           .groupTuple() 
+           .set { RES_BY_X }
 
 process RegroupTables {
     publishDir '../../partA/Results', overwrite: true
     clusterOptions "-S /bin/bash"
     input:
-    file _ from RF_SCORES .toList()
+    set key, file(_) from RES_BY_X 
     output:
-    file "all_table.csv" into FINAL_TABLE
+    file "all_table_${key}" into FINAL_TABLE
     script:
     """
     #!/usr/bin/env python
@@ -158,12 +168,11 @@ process RegroupTables {
     for f in files:
         table = read_csv(f, index_col=0)
         name, ext = f.split('.')
-        __, n_name, p_name = name.split('__')
+        __, n_name, p_name, key = name.split('__')
         table.columns = ['n_{}_{}'.format(n_name, p_name)]
         l_tab.append(table)
     all_tab = concat(l_tab, axis=1)
     all_tab.ix['mean'] = all_tab.mean()
-    all_tab.to_csv('all_table.csv')
+    all_tab.to_csv('all_table_${key}')
     """
 }
-

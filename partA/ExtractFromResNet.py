@@ -25,8 +25,8 @@ else:
     mean = np.zeros(shape=3, dtype='float')
 
 n_classes = 4
-FACTORS = [0.25]
-#FACTORS = [1., 0.75, 0.5, 0.25, 0.1]
+#FACTORS = [0.25]
+FACTORS = [1., 0.75, 0.5, 0.25, 0.1]
 
 def sliding_window(image, stepSize, windowSize):
     # slide a window across the imag
