@@ -47,7 +47,6 @@ process ExtractFromResNet {
     """
 }
 
-
 process Regroup {
     publishDir '../../partA/table', overwrite:true
     clusterOptions "-S /bin/bash -q all.q@compute-0-24"
@@ -55,6 +54,50 @@ process Regroup {
     file tbls from res_net .toList()
     output:
     file 'res_untouched.npy' into RES, RES2
+    script:
+    """
+    #!/usr/bin/env python
+    import numpy as np
+    from glob import glob
+    files = glob('*.npy')
+    size = np.load(files[0]).shape[0]
+    resnet = np.zeros((len(files), size), dtype='float')
+    for k, f in enumerate(files):
+        resnet[k] = np.load(f)
+    np.save('res_untouched.npy', resnet)
+    """
+}
+
+ExtractResPYTrained = file("ExtractFromTrainedResNet.py")
+Trained_files = file("../../partA/trainedmodel/fromCV/0.0001__0.99__0.00005_fold_0.h5")
+
+process ExtractFromTrainedResNet {
+    clusterOptions "-S /bin/bash"
+    queue "all.q"
+    input:
+    file py from ExtractResPYTrained
+    file mean_file from MEAN
+    file fold from IMAGE_FOLD
+    file img from IMAGES
+    file weights from Trained_files
+    output:
+    file '*.npy' into res_trainednet
+    script:
+    """
+    function pyglib {
+        /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/envs/cpu_tf/bin/python \$@
+    }
+    pyglib $py $img $weights $mean_file
+    """
+}
+
+process RegroupTrained {
+    publishDir '../../partA/table', overwrite:true
+    clusterOptions "-S /bin/bash -q all.q@compute-0-24"
+    input:
+    file tbls from res_trainednet .toList()
+    output:
+    file 'res_traineduntouched.npy' into RESTRAINED, RESTRAINED2
     script:
     """
     #!/usr/bin/env python
