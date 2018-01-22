@@ -28,10 +28,10 @@ mean_imagenet[2] = 103.939
 mean_imagenet[1] = 116.779
 mean_imagenet[0] = 123.68
 
-if len(sys.argv) > 3:
-    mean = np.load(sys.argv[3]) - mean_imagenet
-else:
-    mean = np.zeros(shape=3, dtype='float')
+#if len(sys.argv) > 3:
+#    mean = np.load(sys.argv[3]) - mean_imagenet
+#else:
+#    mean = np.zeros(shape=3, dtype='float')
 
 n_classes = 4
 #FACTORS = [0.1]
@@ -103,13 +103,13 @@ for fact in FACTORS:
         img_scale = image
     img_scale = img_scale.astype(float)
 #    img_scale = img_scale - mean
-    img_scale = img_scale + mean_imagenet
+#    img_scale = img_scale + mean_imagenet
     stepSize = 224
     windowSize = (224, 224)
     for x, y, x_e, y_e, x in sliding_window(img_scale, stepSize, windowSize):
         x = x.astype(float)
         x = np.expand_dims(x, axis=0)
-        x = preprocess_input(x)
+#        x = preprocess_input(x)
 
         features = model.predict(x)
         features_reduce =  features.squeeze()
