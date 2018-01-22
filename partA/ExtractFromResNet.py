@@ -19,8 +19,15 @@ from sklearn.model_selection import StratifiedShuffleSplit
 import sys
 from os.path import basename
 import pdb
+
+
+mean = np.ones(3, dtype=np.float32)
+mean[2] = 103.939
+mean[1] = 116.779
+mean[0] = 123.68
+
 if len(sys.argv) > 2:
-    mean = np.load(sys.argv[2])
+    mean = np.load(sys.argv[2]) - mean
 else:
     mean = np.zeros(shape=3, dtype='float')
 
