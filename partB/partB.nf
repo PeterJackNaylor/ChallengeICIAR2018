@@ -75,11 +75,12 @@ process deepTrain {
     each w_d from WEIGHT_DECAY
     output:
     file "${lr}__${mom}__${w_d}.csv" into RES_TRAIN
-    
+    file "*.h5" into MODEL_WEIGHTS
+
     """
     function pyglib {
         /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/bin/python \$@
     }
-    python $py --split $split --epoch $epoch --bs $batch_size --lr $lr --mom $mom --weight_decay ${w_d} --output ${lr}__${mom}__${w_d}.csv
+    python $py --split $split --epoch $epoch --bs $batch_size --lr $lr --mom $mom --weight_decay ${w_d} --output ${lr}__${mom}__${w_d}.csv --output_mod ${lr}__${mom}__${w_d}.h5
     """
 }

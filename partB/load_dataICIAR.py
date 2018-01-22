@@ -18,12 +18,14 @@ def load_ICIAR_data():
     n = len(folder)
     X = np.zeros(shape=(n, img_height, img_width, num_channels), dtype='uint8')
     y = np.zeros(shape=(n, num_classes), dtype='uint8')
-    for k, f in enumerate(folder):
+    print "Loading data.."
+    for k, f in enumerate(folder[:1000]):
         img = imread(f).astype('uint8')
         X[k] = img[:,:,0:3]
         fname = basename(f).replace('.png', '')
         lbl, svs, ind = fname.split('_')
         y[k, int(lbl)] = 1
+    print "Data loaded, size: {}".format(k)
     return X, y
         
         

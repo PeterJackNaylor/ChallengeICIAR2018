@@ -103,16 +103,16 @@ process only_nuc_RF {
     from sklearn.metrics import confusion_matrix
     import numpy as np
 
-
-    table = read_csv('${table}', index_col=0)
-    y = table['label']
-    X = table.drop('label', axis=1)
+    table_npy = np.load('${table}')
+    id = table_npy[:,0].copy()
+    y = table_npy[:,1].copy()
+    X = table_npy[:,2:]
     skf = StratifiedKFold(n_splits=${n_splits}, shuffle=True, random_state=42)
     val_scores = np.zeros(${n_splits})
     cross = 0
     for train_index, test_index in skf.split(X, y):
-        X_train, X_test = X.ix[train_index], X.ix[test_index]
-        y_train, y_test = y.ix[train_index], y.ix[test_index]
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
         clf = RandomForestClassifier(n_estimators=${n}, max_features='${method}')
         clf.fit(X_train, y_train)
         print 'Trained model for fold: {}'.format(cross)
@@ -131,6 +131,7 @@ process only_nuc_RF {
 RESNET_FEAT = file("../../partA/table/ResNet_Feature.out")
 
 process all_RF {
+    // TO DO, BECAREFULNAME
     publishDir '../../segmentation_table/Results', overwrite: true
     clusterOptions "-S /bin/bash -q all.q@compute-0-${key}"
     input:
@@ -151,12 +152,15 @@ process all_RF {
     from sklearn.metrics import confusion_matrix
     import numpy as np
     import pdb
+
+    table_res = np.load('${table}')
+    id_res = table_npy[:,0].copy()
+    y_res = table_npy[:,1].copy()
+    X_resnet = table_npy[:,2:]
+    
     table_nuc = read_csv('${tab_nuc}', index_col=0)
     y = table_nuc['label']
     X = table_nuc.drop('label', axis=1)
-    table_res = read_csv('${table}', header=None, index_col=0)
-    y_res = table_res[1]
-    X_res = table_res.drop(1, axis=1)
     skf = StratifiedKFold(n_splits=${n_splits}, shuffle=True, random_state=42)
     val_scores = np.zeros(${n_splits})
     cross = 0
