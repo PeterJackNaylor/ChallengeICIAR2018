@@ -23,8 +23,13 @@ import pdb
 
 trained_weights = sys.argv[2]
 
+mean_imagenet = np.ones(3, dtype=np.float32)
+mean_imagenet[2] = 103.939
+mean_imagenet[1] = 116.779
+mean_imagenet[0] = 123.68
+
 if len(sys.argv) > 3:
-    mean = np.load(sys.argv[3])
+    mean = np.load(sys.argv[3]) - mean_imagenet
 else:
     mean = np.zeros(shape=3, dtype='float')
 
@@ -103,7 +108,8 @@ for fact in FACTORS:
     else:
         img_scale = image
     img_scale = img_scale.astype(float)
-    img_scale = img_scale - mean
+#    img_scale = img_scale - mean
+    img_scale = img_scale + mean_imagenet
     stepSize = 224
     windowSize = (224, 224)
     for x, y, x_e, y_e, x in sliding_window(img_scale, stepSize, windowSize):

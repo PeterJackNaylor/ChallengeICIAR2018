@@ -17,7 +17,7 @@ process MeanCalculation {
     n = len(photos)
     res = np.zeros(shape=3, dtype='float')
     for i, img_path in enumerate(photos):
-        img = imread(img_path)
+        img = imread(img_path).astype('uint8')
         res += np.mean(img, axis=(0, 1))
     res = res / n
     np.save('mean_file.npy', res)
@@ -108,7 +108,7 @@ process RegroupTrained {
     resnet = np.zeros((len(files), size), dtype='float')
     for k, f in enumerate(files):
         resnet[k] = np.load(f)
-    np.save('res_untouched.npy', resnet)
+    np.save('res_traineduntouched.npy', resnet)
     """
 }
 
@@ -130,7 +130,7 @@ process StatDescr {
     """
 }
 
-RES.concat(other_tabs) .set{ALL_POS}
+RES.concat(other_tabs) .concat(RESTRAINED) .set{ALL_POS}
 
 N_SPLIT = 5
 TREE_SIZE = Channel.from([10, 100, 200, 500, 1000, 10000])
