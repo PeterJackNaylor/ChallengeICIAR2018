@@ -77,6 +77,12 @@ inv_label_map = {i: l for l, i in label_map.items()}
 base_model = load_model(trained_weights)
 model = Model(inputs=base_model.input, outputs=base_model.get_layer('avg_pool').output)
 
+#probability to concat
+input = Input(shape=(224,224,3), name='image_input')
+x = base_model(input)
+x = Flatten()(x)
+model_prob = Model(inputs=input, outputs=x)
+
 X_mat = []
 y_mat = []
 
@@ -111,7 +117,7 @@ for fact in FACTORS:
         x = np.expand_dims(x, axis=0)
 #        x = preprocess_input(x)
 
-        features = model.predict(x)
+        features = model.predict(x) 
         features_reduce =  features.squeeze()
         img_feat_list.append(features_reduce)
 
