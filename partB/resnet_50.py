@@ -15,6 +15,7 @@ import numpy as np
 # from load_cifar10 import load_cifar10_data
 from load_dataICIAR import load_ICIAR_data
 import pandas as pd
+from keras.preprocessing.image import ImageDataGenerator
 
 
 def identity_block(input_tensor, kernel_size, filters, stage, block):
@@ -191,19 +192,18 @@ if __name__ == '__main__':
     batch_size = 16 
     batch_size = options.bs
     nb_epoch = options.epoch
-    n_split = options.split
+    n_split = 10
     # Load Cifar10 data. Please implement your own load_data() module for your own dataset
-    X, y = load_ICIAR_data()
-    print "Finished loading data"
+    X, y, id_n = load_ICIAR_data()
     def f(row): return np.where(row == 1)[0][0]
     y_strat = map(f, y)
-    skf = StratifiedKFold(n_splits=n_split)
     val_scores = np.zeros(n_split)
     score = np.zeros(n_split, dtype='float')
     acc = np.zeros(n_split, dtype='float')
     
-    k = 0
-    for train_index, test_index in skf.split(np.zeros(len(y_strat)), y_strat):
+    for k in range(1, 11):
+        train_index = np.where(id_n != k)[0]
+        test_index = np.where(id_n == k)[0]
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
         # Load our model
@@ -213,23 +213,38 @@ if __name__ == '__main__':
         model = resnet50_model(img_rows, img_cols, channel, num_classes, lr, mom, w_d)
 
         # Start Fine-tuning
-        model.fit(X_train, y_train,
-                  batch_size=batch_size,
-                  nb_epoch=nb_epoch,
-                  shuffle=True,
-                  verbose=1,
-                  validation_data=(X_test, y_test)
-                  )
+        train_datagen = ImageDataGenerator(rotation_range=360,
+            width_shift_range=0.2,
+            height_shift_range=0.2,
+            shear_range=0.2,
+            zoom_range=0.1,
+            channel_shift_range=0.1,
+            fill_mode='reflect',
+            horizontal_flip=True,
+            vertical_flip=True)
+        
+        train_generator = train_datagen.flow(X_train, y_train, batch_size=batch_size)
+        model.fit_generator(train_generator, steps_per_epoch=len(X_train) / batch_size, epochs=nb_epoch, validation_data=(X_test, y_test), workers=10, use_multiprocessing=True, shuffle=True)
+       # for e in range(epochs):
+       #     print('Epoch', e)
+       #     batches = 0
+       #     for x_batch, y_batch in train_generator:
+       #         model.fit(x_batch, y_batch, batch_size=batch_size)
+       #         batches += 1
+       #         if batches >= len(X_train) / batch_size:
+       #             # we need to break the loop by hand because
+       #             # the generator loops indefinitely
+       #             break
 
         # Make predictions
         predictions_valid = model.predict(X_test, batch_size=batch_size, verbose=1)
 
         # Cross-entropy loss score
-        score[k] = log_loss(y_test, predictions_valid)
-        acc[k] = accuracy_score(map(np.argmax, y_test), map(np.argmax, predictions_valid))
+        score[k-1] = log_loss(y_test, predictions_valid)
+        acc[k-1] = accuracy_score(map(np.argmax, y_test), map(np.argmax, predictions_valid))
         fold_name = options.output_mod
         fold_name = fold_name.replace('.h5', '_fold_{}.h5').format(k)
         model.save(fold_name)
-        k += 1
 
     pd.DataFrame({'cross-entropy': score, 'accuracy': acc}).to_csv(options.output)
+

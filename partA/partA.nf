@@ -17,7 +17,7 @@ process MeanCalculation {
     n = len(photos)
     res = np.zeros(shape=3, dtype='float')
     for i, img_path in enumerate(photos):
-        img = imread(img_path)
+        img = imread(img_path).astype('uint8')
         res += np.mean(img, axis=(0, 1))
     res = res / n
     np.save('mean_file.npy', res)
@@ -47,14 +47,13 @@ process ExtractFromResNet {
     """
 }
 
-
 process Regroup {
     publishDir '../../partA/table', overwrite:true
     clusterOptions "-S /bin/bash -q all.q@compute-0-24"
     input:
     file tbls from res_net .toList()
     output:
-    file 'ResNet_Feature.npy' into RES
+    file 'res_untouched.npy' into RES, RES2
     script:
     """
     #!/usr/bin/env python
@@ -65,26 +64,91 @@ process Regroup {
     resnet = np.zeros((len(files), size), dtype='float')
     for k, f in enumerate(files):
         resnet[k] = np.load(f)
-    np.save('ResNet_Feature.npy', resnet)
+    np.save('res_untouched.npy', resnet)
     """
 }
+
+ExtractResPYTrained = file("ExtractFromTrainedResNet.py")
+Trained_files = file("../../partA/trainedmodel/fromCV/0.0001__0.99__0.00005_fold_0.h5")
+
+process ExtractFromTrainedResNet {
+    clusterOptions "-S /bin/bash"
+    queue "all.q"
+    input:
+    file py from ExtractResPYTrained
+    file mean_file from MEAN
+    file fold from IMAGE_FOLD
+    file img from IMAGES
+    file weights from Trained_files
+    output:
+    file '*.npy' into res_trainednet
+    script:
+    """
+    function pyglib {
+        /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/envs/cpu_tf/bin/python \$@
+    }
+    pyglib $py $img $weights $mean_file
+    """
+}
+
+process RegroupTrained {
+    publishDir '../../partA/table', overwrite:true
+    clusterOptions "-S /bin/bash -q all.q@compute-0-24"
+    input:
+    file tbls from res_trainednet .toList()
+    output:
+    file 'res_traineduntouched.npy' into RESTRAINED, RESTRAINED2
+    script:
+    """
+    #!/usr/bin/env python
+    import numpy as np
+    from glob import glob
+    files = glob('*.npy')
+    size = np.load(files[0]).shape[0]
+    resnet = np.zeros((len(files), size), dtype='float')
+    for k, f in enumerate(files):
+        resnet[k] = np.load(f)
+    np.save('res_traineduntouched.npy', resnet)
+    """
+}
+
+SUMMARIZE = file('Summarize_resnet.py')
+FUNCTIONS = ["All", "Max", "Mean", "Median"]
+
+process StatDescr {
+    publishDir '../../partA/table', overwrite:true
+    clusterOptions "-S /bin/bash -q all.q@compute-0-24"
+    input:
+    file table from RES2
+    file py from SUMMARIZE
+    each type from FUNCTIONS
+    output:
+    file "res_${type}.npy" into other_tabs
+    script:
+    """
+    python $py $table $type res_${type}.npy
+    """
+}
+
+RES.concat(other_tabs) .concat(RESTRAINED) .set{ALL_POS}
 
 N_SPLIT = 5
 TREE_SIZE = Channel.from([10, 100, 200, 500, 1000, 10000])
 NUMBER_P = Channel.from(["auto", "log2"])
-COMP = Channel.from(15..24)
-TREE_SIZE .combine(NUMBER_P) .set{ Param }
+Channel.from(15..24) .concat(Channel.from(15..24)) .concat(Channel.from(15..24)) .concat(Channel.from(15..24)) .concat(Channel.from(15..24)) .set {COMP}
+TREE_SIZE .combine(NUMBER_P) .merge(COMP).set{ Param }
+ALL_POS .combine(Param) .set{ TAB_Param}
+
+//TAB_Param .map{it -> file(it[0]).split()} .println()
 
 process TrainRF {
     publishDir '../../partA/Results', overwrite: true
     clusterOptions "-S /bin/bash -q all.q@compute-0-${key}"
     input:
-    file table from RES
     val n_splits from N_SPLIT
-    set n, method from Param
-    val key from COMP
+    set file(table), n, method, key from TAB_Param
     output:
-    file "score__${n}__${method}.csv" into RF_SCORES
+    file "score__${n}__${method}__${table.getBaseName().split('_')[1]}.csv" into RF_SCORES
     script:
     """
     #!/usr/bin/env python
@@ -116,17 +180,25 @@ process TrainRF {
         print ' Confusion matrix ', confusion_matrix(y_test, y_pred_test)
         val_scores[cross] = score_test
         cross += 1
-    DataFrame(val_scores).to_csv('score__${n}__${method}.csv')
+    DataFrame(val_scores).to_csv('score__${n}__${method}__${table.getBaseName().split('_')[1]}.csv')
     """
 }
+
+def getKey( file ) {
+      file.name.split('__')[3] 
+}
+/* Regrouping files by patient for tiff stiching */
+RF_SCORES  .map { file -> tuple(getKey(file), file) }
+           .groupTuple() 
+           .set { RES_BY_X }
 
 process RegroupTables {
     publishDir '../../partA/Results', overwrite: true
     clusterOptions "-S /bin/bash"
     input:
-    file _ from RF_SCORES .toList()
+    set key, file(_) from RES_BY_X 
     output:
-    file "all_table.csv" into FINAL_TABLE
+    file "all_table_${key}" into FINAL_TABLE
     script:
     """
     #!/usr/bin/env python
@@ -139,12 +211,11 @@ process RegroupTables {
     for f in files:
         table = read_csv(f, index_col=0)
         name, ext = f.split('.')
-        __, n_name, p_name = name.split('__')
+        __, n_name, p_name, key = name.split('__')
         table.columns = ['n_{}_{}'.format(n_name, p_name)]
         l_tab.append(table)
     all_tab = concat(l_tab, axis=1)
     all_tab.ix['mean'] = all_tab.mean()
-    all_tab.to_csv('all_table.csv')
+    all_tab.to_csv('all_table_${key}')
     """
 }
-

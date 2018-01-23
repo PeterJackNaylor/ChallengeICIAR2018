@@ -7,6 +7,7 @@ from tqdm import tqdm
 import tensorflow as tf
 from keras.applications.resnet50 import ResNet50
 from keras.models import Model
+from keras.models import load_model
 from keras.preprocessing import image
 from keras.applications.resnet50 import preprocess_input, decode_predictions
 from keras.layers import Flatten, Input
@@ -20,19 +21,20 @@ import sys
 from os.path import basename
 import pdb
 
+trained_weights = sys.argv[2]
 
-mean = np.ones(3, dtype=np.float32)
-mean[2] = 103.939
-mean[1] = 116.779
-mean[0] = 123.68
+mean_imagenet = np.ones(3, dtype=np.float32)
+mean_imagenet[2] = 103.939
+mean_imagenet[1] = 116.779
+mean_imagenet[0] = 123.68
 
-if len(sys.argv) > 2:
-    mean = np.load(sys.argv[2]) - mean
+if len(sys.argv) > 3:
+    mean = np.load(sys.argv[3]) - mean_imagenet
 else:
     mean = np.zeros(shape=3, dtype='float')
 
 n_classes = 4
-#FACTORS = [0.25]
+#FACTORS = [0.1]
 FACTORS = [1., 0.75, 0.5, 0.25, 0.1]
 
 def sliding_window(image, stepSize, windowSize):
@@ -65,12 +67,21 @@ labels = list(set(flatten([l.split(' ') for l in lbl])))
 label_map = {l: i for i, l in enumerate(labels)}
 inv_label_map = {i: l for l, i in label_map.items()}
 
-# use ResNet50 model extract feature from fc1 layer
-base_model = ResNet50(weights='imagenet', pooling=max, include_top = False)
-input = Input(shape=(224,224,3),name = 'image_input')
+# # use ResNet50 model extract feature from fc1 layer
+# base_model = ResNet50(weights='imagenet', pooling=max, include_top = False)
+# input = Input(shape=(224,224,3),name = 'image_input')
+# x = base_model(input)
+# x = Flatten()(x)
+# model = Model(inputs=input, outputs=x)
+
+base_model = load_model(trained_weights)
+model = Model(inputs=base_model.input, outputs=base_model.get_layer('avg_pool').output)
+
+#probability to concat
+input = Input(shape=(224,224,3), name='image_input')
 x = base_model(input)
 x = Flatten()(x)
-model = Model(inputs=input, outputs=x)
+model_prob = Model(inputs=input, outputs=x)
 
 X_mat = []
 y_mat = []
@@ -97,7 +108,8 @@ for fact in FACTORS:
     else:
         img_scale = image
     img_scale = img_scale.astype(float)
-    img_scale = img_scale - mean
+#    img_scale = img_scale - mean
+    img_scale = img_scale + mean_imagenet
     stepSize = 224
     windowSize = (224, 224)
     for x, y, x_e, y_e, x in sliding_window(img_scale, stepSize, windowSize):
@@ -105,7 +117,7 @@ for fact in FACTORS:
         x = np.expand_dims(x, axis=0)
         x = preprocess_input(x)
 
-        features = model.predict(x)
+        features = model.predict(x) 
         features_reduce =  features.squeeze()
         img_feat_list.append(features_reduce)
 
