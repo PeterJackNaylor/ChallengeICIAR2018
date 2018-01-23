@@ -23,13 +23,8 @@ import pdb
 
 trained_weights = sys.argv[2]
 
-mean_imagenet = np.ones(3, dtype=np.float32)
-mean_imagenet[2] = 103.939
-mean_imagenet[1] = 116.779
-mean_imagenet[0] = 123.68
-
 if len(sys.argv) > 3:
-    mean = np.load(sys.argv[3]) - mean_imagenet
+    mean = np.load(sys.argv[3])
 else:
     mean = np.zeros(shape=3, dtype='float')
 
@@ -74,9 +69,6 @@ inv_label_map = {i: l for l, i in label_map.items()}
 # x = Flatten()(x)
 # model = Model(inputs=input, outputs=x)
 
-base_model = load_model(trained_weights)
-#model = Model(inputs=base_model.input, outputs=base_model.get_layer('avg_pool').output)
-
 #probability to concat
 input = Input(shape=(224,224,3), name='image_input')
 x = base_model(input)
@@ -108,8 +100,7 @@ for fact in FACTORS:
     else:
         img_scale = image
     img_scale = img_scale.astype(float)
-#    img_scale = img_scale - mean
-    img_scale = img_scale + mean_imagenet
+    img_scale = img_scale - mean
     stepSize = 224
     windowSize = (224, 224)
     for x, y, x_e, y_e, x in sliding_window(img_scale, stepSize, windowSize):
@@ -117,7 +108,7 @@ for fact in FACTORS:
         x = np.expand_dims(x, axis=0)
         x = preprocess_input(x)
 
-        features = model.predict(x) 
+        features = model_prob.predict(x) 
         features_reduce =  features.squeeze()
         img_feat_list.append(features_reduce)
 
