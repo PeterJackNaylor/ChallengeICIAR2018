@@ -184,6 +184,7 @@ if __name__ == '__main__':
     parser.add_option('--split', dest="split", type="int")
     parser.add_option('--epoch', dest="epoch", type="int")
     parser.add_option('--bs', dest="bs", type="int")
+    parser.add_option('--mean', dest="mean", type="str")
     (options, args) = parser.parse_args()
 
     img_rows, img_cols = 224, 224 # Resolution of inputs
@@ -194,7 +195,7 @@ if __name__ == '__main__':
     nb_epoch = options.epoch
     n_split = 10
     # Load Cifar10 data. Please implement your own load_data() module for your own dataset
-    X, y, id_n = load_ICIAR_data()
+    X, y, id_n = load_ICIAR_data(options.mean)
     print "Finished loading data"
     def f(row): return np.where(row == 1)[0][0]
     y_strat = map(f, y)

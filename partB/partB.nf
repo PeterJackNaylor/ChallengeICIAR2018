@@ -43,6 +43,27 @@ process removeWhitePics {
     """
 }
 
+process mean {
+    clusterOptions "-S /bin/bash"
+    publishDir "../../partB/meta", overwrite:true
+    queue 'all.q'
+    input:
+    file INPUT_VALID .toList()
+    output:
+    file "mean_file.npy" into MEAN_ARRAY
+    """
+    #!/usr/bin/env python
+    import numpy as np
+    from glob import glob
+    files = glob('*.npy')
+    size = np.load(files[0]).shape[0]
+    resnet = np.zeros((len(files), size), dtype='float')
+    for k, f in enumerate(files):
+        resnet[k] = np.load(f)
+    np.save('res_prob.npy', resnet)
+    """
+
+}
 
 
 
@@ -61,6 +82,7 @@ process deepTrain {
     queue 'cuda.q'
     maxForks 1
     input:
+    file mean from MEAN_ARRAY
     file py from RESNET_50
     val split from SPLIT
     val epoch from EPOCH
@@ -78,6 +100,6 @@ process deepTrain {
     function pyglib {
         /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/bin/python \$@
     }
-    pyglib $py --split $split --epoch $epoch --bs $batch_size --lr $lr --mom $mom --weight_decay ${w_d} --output ${lr}__${mom}__${w_d}.csv output_mod ${lr}__${mom}__${w_d}.h5
+    pyglib $py --split $split --epoch $epoch --bs $batch_size --lr $lr --mom $mom --weight_decay ${w_d} --output ${lr}__${mom}__${w_d}.csv --output_mod ${lr}__${mom}__${w_d}.h5 --mean $mean 
     """
 }
