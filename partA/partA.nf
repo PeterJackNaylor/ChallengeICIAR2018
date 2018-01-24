@@ -194,6 +194,7 @@ process TrainRF {
     set file(table), n, method, key from TAB_Param
     output:
     file "score__${n}__${method}__${table.getBaseName().split('_')[1]}.csv" into RF_SCORES
+    file "y_pred_${n}__${method}__${table.getBaseName().split('_')[1]}.npy"
     script:
     """
     #!/usr/bin/env python
