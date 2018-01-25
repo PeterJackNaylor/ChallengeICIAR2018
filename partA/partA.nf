@@ -112,6 +112,49 @@ process RegroupTrained {
     """
 }
 
+ExtractProb = file('ExtractProbFromTrainedRes.py')
+
+process ExtractProbFromTrained {
+    clusterOptions "-S /bin/bash"
+    queue "all.q"
+    input:
+    file py from ExtractProb
+    file mean_file from MEAN
+    file fold from IMAGE_FOLD
+    file img from IMAGES
+    file weights from Trained_files
+    output:
+    file '*.npy' into res_prob
+    script:
+    """
+    function pyglib {
+        /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/envs/cpu_tf/bin/python \$@
+    }
+    pyglib $py $img $weights $mean_file
+    """
+}
+
+process RegroupProb {
+    publishDir '../../partA/table', overwrite:true
+    clusterOptions "-S /bin/bash -q all.q@compute-0-24"
+    input:
+    file tbls from res_prob .toList()
+    output:
+    file 'res_prob.npy' into RESPROB, RESPROB2
+    script:
+    """
+    #!/usr/bin/env python
+    import numpy as np
+    from glob import glob
+    files = glob('*.npy')
+    size = np.load(files[0]).shape[0]
+    resnet = np.zeros((len(files), size), dtype='float')
+    for k, f in enumerate(files):
+        resnet[k] = np.load(f)
+    np.save('res_prob.npy', resnet)
+    """
+}
+
 SUMMARIZE = file('Summarize_resnet.py')
 FUNCTIONS = ["All", "Max", "Mean", "Median"]
 
@@ -130,7 +173,7 @@ process StatDescr {
     """
 }
 
-RES.concat(other_tabs) .concat(RESTRAINED) .set{ALL_POS}
+RES.concat(other_tabs) .concat(RESTRAINED) .concat(RESPROB) .set{ALL_POS}
 
 N_SPLIT = 5
 TREE_SIZE = Channel.from([10, 100, 200, 500, 1000, 10000])

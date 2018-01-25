@@ -23,15 +23,10 @@ import pdb
 
 trained_weights = sys.argv[2]
 
-mean_imagenet = np.ones(3, dtype=np.float32)
-mean_imagenet[2] = 103.939
-mean_imagenet[1] = 116.779
-mean_imagenet[0] = 123.68
-
-#if len(sys.argv) > 3:
-#    mean = np.load(sys.argv[3]) - mean_imagenet
-#else:
-#    mean = np.zeros(shape=3, dtype='float')
+if len(sys.argv) > 3:
+    mean = np.load(sys.argv[3])
+else:
+    mean = np.zeros(shape=3, dtype='float')
 
 n_classes = 4
 #FACTORS = [0.1]
@@ -74,15 +69,13 @@ inv_label_map = {i: l for l, i in label_map.items()}
 # x = Flatten()(x)
 # model = Model(inputs=input, outputs=x)
 
-base_model = load_model(trained_weights)
-model = Model(inputs=base_model.input, outputs=base_model.get_layer('avg_pool').output)
-
 #probability to concat
+base_model = load_model(trained_weights)
 #input = Input(shape=(224,224,3), name='image_input')
 #x = base_model(input)
 #x = Flatten()(x)
 #model_prob = Model(inputs=input, outputs=x)
-
+model_prob = base_model
 X_mat = []
 y_mat = []
 
@@ -108,19 +101,17 @@ for fact in FACTORS:
     else:
         img_scale = image
     img_scale = img_scale.astype(float)
-#    img_scale = img_scale - mean
-#    img_scale = img_scale + mean_imagenet
+    # img_scale = img_scale - mean
     stepSize = 224
     windowSize = (224, 224)
     for x, y, x_e, y_e, x in sliding_window(img_scale, stepSize, windowSize):
         x = x.astype(float)
         x = np.expand_dims(x, axis=0)
-#        x = preprocess_input(x)
+    #    x = preprocess_input(x)
 
-        features = model.predict(x) 
+        features = model_prob.predict(x) 
         features_reduce =  features.squeeze()
         img_feat_list.append(features_reduce)
-
 matrix_img_feat = np.column_stack(img_feat_list)
 for i in range(matrix_img_feat.shape[0]):
     matrix_img_feat[i] = np.sort(matrix_img_feat[i])

@@ -184,6 +184,7 @@ if __name__ == '__main__':
     parser.add_option('--split', dest="split", type="int")
     parser.add_option('--epoch', dest="epoch", type="int")
     parser.add_option('--bs', dest="bs", type="int")
+    parser.add_option('--mean', dest="mean", type="str")
     (options, args) = parser.parse_args()
 
     img_rows, img_cols = 224, 224 # Resolution of inputs
@@ -194,7 +195,7 @@ if __name__ == '__main__':
     nb_epoch = options.epoch
     n_split = 10
     # Load Cifar10 data. Please implement your own load_data() module for your own dataset
-    X, y, id_n = load_ICIAR_data()
+    X, y, id_n = load_ICIAR_data(options.mean)
     def f(row): return np.where(row == 1)[0][0]
     y_strat = map(f, y)
     val_scores = np.zeros(n_split)
@@ -213,18 +214,18 @@ if __name__ == '__main__':
         model = resnet50_model(img_rows, img_cols, channel, num_classes, lr, mom, w_d)
 
         # Start Fine-tuning
-        train_datagen = ImageDataGenerator(rotation_range=360,
-            width_shift_range=0.2,
-            height_shift_range=0.2,
-            shear_range=0.2,
-            zoom_range=0.1,
-            channel_shift_range=0.1,
+        train_datagen = ImageDataGenerator(rotation_range=180,
+            width_shift_range=0.1,
+            height_shift_range=0.1,
+            shear_range=0.0,
+            zoom_range=0.0,
+            channel_shift_range=0.0,
             fill_mode='reflect',
             horizontal_flip=True,
             vertical_flip=True)
         
         train_generator = train_datagen.flow(X_train, y_train, batch_size=batch_size)
-        model.fit_generator(train_generator, steps_per_epoch=len(X_train) / batch_size, epochs=nb_epoch, validation_data=(X_test, y_test), workers=10, use_multiprocessing=True, shuffle=True)
+        model.fit_generator(train_generator, steps_per_epoch=len(X_train) / batch_size, epochs=nb_epoch, validation_data=(X_test, y_test), shuffle=True)
        # for e in range(epochs):
        #     print('Epoch', e)
        #     batches = 0
