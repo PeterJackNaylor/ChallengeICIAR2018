@@ -207,7 +207,7 @@ process TrainRF {
     table_npy = np.load('${table}')
     id = table_npy[:,0].copy()
     y = table_npy[:,1].copy()
-    res_y = np.zeros_like(y)
+    res_y = np.zeros(shape=(4, y.shape[0]))
     X = table_npy[:,2:]
     skf = StratifiedKFold(n_splits=${n_splits}, shuffle=True, random_state=42)
     val_scores = np.zeros(${n_splits})
@@ -219,12 +219,13 @@ process TrainRF {
         clf.fit(X_train, y_train)
         print 'Trained model for fold: {}'.format(cross)
         y_pred_test = clf.predict(X_test)
+        y_pred_prob = clf.predict_proba(X_test)
         y_pred_train = clf.predict(X_train)
         print 'Train Accuracy :: ', accuracy_score(y_train, y_pred_train)
         score_test = accuracy_score(y_test, y_pred_test)
         print 'Test Accuracy  :: ', score_test
         print ' Confusion matrix ', confusion_matrix(y_test, y_pred_test)
-        res_y[test_index] = y_pred_test
+        res_y[test_index] = y_pred_prob
         val_scores[cross] = score_test
         cross += 1
     DataFrame(val_scores).to_csv('score__${n}__${method}__${table.getBaseName().split('_')[1]}.csv')
