@@ -60,7 +60,6 @@ def sliding_window(image, stepSize, windowSize):
     for x in xrange(0, image.shape[0] - windowSize[0] + stepSize, stepSize):
         for y in xrange(0, image.shape[1] - windowSize[1] + stepSize, stepSize):
             # yield the current window
-            print x, y
             res_img = image[x:x + windowSize[0], y:y + windowSize[0]]
             change = False
             if res_img.shape[0] != windowSize[0]:
@@ -134,7 +133,7 @@ for fact in FACTORS:
         features_reduce =  features.squeeze()
         img_feat_list.append(features_reduce)
 ax.imshow(image)
-fig.axis('off')
+ax.axis('off')
 fig.savefig(tags.replace('.tif', '_prob.tif'), bbox_inches='tight')
 matrix_img_feat = np.column_stack(img_feat_list)
 for i in range(matrix_img_feat.shape[0]):
