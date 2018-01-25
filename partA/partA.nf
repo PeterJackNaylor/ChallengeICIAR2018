@@ -117,6 +117,7 @@ ExtractProb = file('ExtractProbFromTrainedRes.py')
 process ExtractProbFromTrained {
     clusterOptions "-S /bin/bash"
     queue "all.q"
+    publishDir '../../partA/prob_from_pretrained_res', pattern: "*.tif", overwrite: true
     input:
     file py from ExtractProb
     file mean_file from MEAN
@@ -125,6 +126,7 @@ process ExtractProbFromTrained {
     file weights from Trained_files
     output:
     file '*.npy' into res_prob
+    file "*_prob.tif"
     script:
     """
     function pyglib {
@@ -192,6 +194,7 @@ process TrainRF {
     set file(table), n, method, key from TAB_Param
     output:
     file "score__${n}__${method}__${table.getBaseName().split('_')[1]}.csv" into RF_SCORES
+    file "y_pred_${n}__${method}__${table.getBaseName().split('_')[1]}.npy"
     script:
     """
     #!/usr/bin/env python
@@ -205,6 +208,7 @@ process TrainRF {
     table_npy = np.load('${table}')
     id = table_npy[:,0].copy()
     y = table_npy[:,1].copy()
+    res_y = np.zeros_like(y)
     X = table_npy[:,2:]
     skf = StratifiedKFold(n_splits=${n_splits}, shuffle=True, random_state=42)
     val_scores = np.zeros(${n_splits})
@@ -221,9 +225,11 @@ process TrainRF {
         score_test = accuracy_score(y_test, y_pred_test)
         print 'Test Accuracy  :: ', score_test
         print ' Confusion matrix ', confusion_matrix(y_test, y_pred_test)
+        res_y[test_index] = y_pred_test
         val_scores[cross] = score_test
         cross += 1
     DataFrame(val_scores).to_csv('score__${n}__${method}__${table.getBaseName().split('_')[1]}.csv')
+    np.save('y_pred_${n}__${method}__${table.getBaseName().split('_')[1]}.npy', res_y)
     """
 }
 

@@ -97,7 +97,7 @@ for k, c in enumerate(channels):
         pic = random.randint(0, len(x_l) - 1)
         x = x_l[pic] - s_0_x // 2
         y = y_l[pic] - s_0_y // 2
-        c_cop[x:(x+s_0_x), y:(y+s_0_y)] = 0
+        c_cop[(x-s_0_x):(x+s_0_x), (y-s_0_y):(y+s_0_y)] = 0
         x_0, y_0 = UOS.get_X_Y(scan, x, y, last_dim_n)
         # add cube to final list: label, x,y for read_imd
         list_channel.append([y_0, x_0, 224, 224, 0, k])

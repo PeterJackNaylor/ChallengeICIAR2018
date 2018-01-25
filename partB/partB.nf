@@ -105,3 +105,25 @@ process deepTrain {
     python $py --split $split --epoch $epoch --bs $batch_size --lr $lr --mom $mom --weight_decay ${w_d} --output ${lr}__${mom}__${w_d}.csv --output_mod ${lr}__${mom}__${w_d}.h5 --mean $mean
     """
 }
+
+PredWSI = file('PredWSI.py')
+
+process PrepareWSI {
+    clusterOptions "-S /bin/bash"
+    publishDir "../../partB/SampleCheckForStep2", overwrite:true
+    queue 'cuda.q'
+    input:
+    file mean from MEAN_ARRAY
+    file py PredWSI
+    file fold from IMAGE_FOLD
+    file weights from MODEL_WEIGHTS
+    output:
+    file "*.png" into STEP2INPUT
+
+    """
+    function pyglib {
+        /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/bin/python \$@
+    }
+    pyglib $py --mean $mean --fold $fold 
+    """
+}
