@@ -94,7 +94,7 @@ for k, c in enumerate(channels):
     c_cop = c.copy()
     while ((c_cop > 0).sum() > 0 and i < number_of_imgs):
         x_l, y_l = np.where(c > 0)  
-        pic = random.randint(0, len(x_l))
+        pic = random.randint(0, len(x_l)) - 1
         x = x_l[pic] - s_0_x // 2
         y = y_l[pic] - s_0_y // 2
         c_cop[(x-s_0_x):(x+s_0_x), (y-s_0_y):(y+s_0_y)] = 0
@@ -106,8 +106,8 @@ for k, c in enumerate(channels):
 
 for y_0, x_0, s_x, s_y, l, lbl in list_channel:
     coord_0 = UOS.get_X_Y(scan, y_0, x_0, last_dim_n)
-    img = scan.read_region((y_0, x_0), l, (s_x, s_y))
-    img = img_as_ubyte(resize(whole_img, (224, 224)))
+    img = np.array(scan.read_region((y_0, x_0), l, (s_x, s_y)))[:,:,0:3]
+    img = img_as_ubyte(resize(img, (224, 224)))
     imsave('samples/{}_{}_{}.png'.format(lbl, num, dic[lbl]), img)
     dic[lbl] += 1
 fif = visualise_cut(scan, list_channel, res_to_view=last_dim_n)
