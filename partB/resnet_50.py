@@ -216,12 +216,12 @@ if __name__ == '__main__':
         model = resnet50_model(img_rows, img_cols, channel, num_classes, lr, mom, w_d)
 
         # Start Fine-tuning
-        train_datagen = ImageDataGenerator(rotation_range=360,
+        train_datagen = ImageDataGenerator(rotation_range=180,
             width_shift_range=0.2,
             height_shift_range=0.2,
-            shear_range=0.2,
-            zoom_range=0.1,
-            channel_shift_range=0.1,
+            shear_range=0.0,
+            zoom_range=0.0,
+            channel_shift_range=0.0,
             fill_mode='reflect',
             horizontal_flip=True,
             vertical_flip=True)
@@ -235,6 +235,7 @@ if __name__ == '__main__':
         # Cross-entropy loss score
         score[k] = log_loss(y_test, predictions_valid)
         acc[k] = accuracy_score(map(np.argmax, y_test), map(np.argmax, predictions_valid))
+        print score, acc
         fold_name = options.output_mod
         fold_name = fold_name.replace('.h5', '_fold_{}.h5').format(k)
         model.save(fold_name)
