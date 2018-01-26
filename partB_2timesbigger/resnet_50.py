@@ -16,7 +16,9 @@ import numpy as np
 from load_dataICIAR import load_ICIAR_data
 import pandas as pd
 from keras.preprocessing.image import ImageDataGenerator
-
+import sys
+sys.path.append('..')
+from utils.GeneratorKeras import ICIARSequence, ICIARSequenceTest
 from keras.callbacks import EarlyStopping
 
 
@@ -188,71 +190,45 @@ if __name__ == '__main__':
     parser.add_option('--epoch', dest="epoch", type="int")
     parser.add_option('--bs', dest="bs", type="int")
     parser.add_option('--mean', dest="mean", type="str")
+    parser.add_option('--k', dest="k", type="int")
     (options, args) = parser.parse_args()
 
     img_rows, img_cols = 224, 224 # Resolution of inputs
     channel = 3
     num_classes = 4
-    batch_size = 16 
     batch_size = options.bs
     nb_epoch = options.epoch
-    n_split = 10
-    # Load Cifar10 data. Please implement your own load_data() module for your own dataset
-    X, y, id_n = load_ICIAR_data(options.mean)
-    def f(row): return np.where(row == 1)[0][0]
-    y_strat = map(f, y)
-    val_scores = np.zeros(n_split)
-    score = np.zeros(n_split, dtype='float')
-    acc = np.zeros(n_split, dtype='float')
-    score_epoch = np.zeros(shape=(n_split, nb_epoch), dtype='float')
-    for k in range(1, 11):
-        train_index = np.where(id_n != k)[0]
-        test_index = np.where(id_n == k)[0]
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-        # Load our model
-        lr = options.lr
-        mom = options.momentum
-        w_d = options.weight_decay
-        model = resnet50_model(img_rows, img_cols, channel, num_classes, lr)
-        # earlystop = EarlyStopping(monitor='val_acc', min_delta=0.0001, patience=5, \
-        #                           verbose=1, mode='auto')
-        # callbacks_list = [earlystop]
-        # Start Fine-tuning
-        train_datagen = ImageDataGenerator(rotation_range=180,
-            width_shift_range=0.1,
-            height_shift_range=0.1,
-            shear_range=0.0,
-            zoom_range=0.0,
-            channel_shift_range=0.0,
-            fill_mode='reflect',
-            horizontal_flip=True,
-            vertical_flip=True)
-        
-        train_generator = train_datagen.flow(X_train, y_train, batch_size=batch_size, shuffle=True) #, save_to_dir='./check')
-#        model.fit_generator(train_generator, steps_per_epoch=len(X_train) / batch_size, epochs=nb_epoch, validation_data=(X_test, y_test), shuffle=True)
-        for e in range(nb_epoch):
-            print('Epoch', e)
-            batches = 0
-            for x_batch, y_batch in train_generator:
-                model.fit(x_batch, y_batch, batch_size=batch_size, verbose=0)
-                batches += 1
-                if batches >= len(X_train) / batch_size:
-                    # we need to break the loop by hand because
-                    # the generator loops indefinitely
-                    break
-            predictions_valid = model.predict(X_test, batch_size=batch_size, verbose=1)
-            score_epoch[k-1, e] = log_loss(y_test, predictions_valid)
-            print "Loss: ", score_epoch[k-1, e]
-        # Make predictions
-        predictions_valid = model.predict(X_test, batch_size=batch_size, verbose=1)
 
-        # Cross-entropy loss score
-        score[k-1] = log_loss(y_test, predictions_valid)
-        acc[k-1] = accuracy_score(map(np.argmax, y_test), map(np.argmax, predictions_valid))
-        fold_name = options.output_mod
-        fold_name = fold_name.replace('.h5', '_fold_{}.h5').format(k)
-        model.save(fold_name)
-    np.save('score_epoch.npy', score_epoch)
-    pd.DataFrame({'cross-entropy': score, 'accuracy': acc}).to_csv(options.output)
+    k = options.k
+    train_datagen = ICIARSequence(options.path, k, num_classes, batch_size)
+    valid_datagen = ICIARSequenceTest(options.path, k, num_classes, batch_size)
+    # Load our model
+    lr = options.lr
+    mom = options.momentum
+    w_d = options.weight_decay
+    model = resnet50_model(img_rows, img_cols, channel, num_classes, lr)
+    earlystop = EarlyStopping(monitor='val_acc', min_delta=0.0001, patience=5, \
+                               verbose=1, mode='auto')
+    callbacks_list = [earlystop]
+
+    
+    model.fit_generator(train_datagen, 
+                        steps_per_epoch=train_datagen.__len__(), 
+                        epochs=nb_epoch,
+                        max_queue_size=1000, 
+                        workers=16, 
+                        use_multiprocessing=False,
+                        validation_data=valid_datagen,
+                        validation_steps=valid_datagen.__len__(),
+                        verbose=1,
+                        callbacks=callbacks_list)
+
+    loss, acc = model.evaluate_generator(valid_datagen, max_queue_size=1000, workers=16)
+    loss = np.array([loss])
+    acc = np.array([acc])
+
+    fold_name = options.output_mod
+    fold_name = fold_name.replace('.h5', '_fold_{}.h5').format(k)
+    model.save(fold_name)
+    pd.DataFrame({'cross-entropy': loss, 'accuracy': acc}).to_csv(options.output)
 
