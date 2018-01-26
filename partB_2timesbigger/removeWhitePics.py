@@ -11,11 +11,11 @@ thresh = float(sys.argv[1])
 def move_img(source_file, destination):
     rename(source_file, path.join(destination, path.basename(source_file).replace('.png', 'v2.png')))
 
-def discard(img_path):
-    move_img(img_path, "./discard")
+def discard(img_path, svs="0"):
+    move_img(img_path, "./discard_{}".format(svs))
 
-def valid(img_path):
-    move_img(img_path, "./valid")
+def valid(img_path, svs="0"):
+    move_img(img_path, "./valid_{}".format(svs))
 
 def WhiteContain(I):
     flat_in = I.reshape(224*224,3)
@@ -27,17 +27,21 @@ def WhiteContain(I):
     vec_res = map(f, flat_in)
     return np.mean(vec_res)
 
-def OpenFileCheckMove(img_path, thresh=thresh):
+def OpenFileCheckMove(img_path, thresh=thresh, svs="0"):
     img = imread(img_path)[:,:,0:3]
     score = WhiteContain(img)
     if score < thresh:
-        valid(img_path)
+        valid(img_path, svs)
     else:
-        discard(img_path)
+        discard(img_path, svs)
 
-CheckOrCreate('./discard')
-CheckOrCreate('./valid')
 
 files = glob('*.png')
+svs_num = files[0].split('_')[1]
+CheckOrCreate('./discard_{}'.format(svs_num))
+CheckOrCreate('./valid_{}'.format(svs_num))
 
-map(OpenFileCheckMove, files)
+def G_OpenFileCheckMove(img_path, thresh=thresh, svs=svs_num):
+    OpenFileCheckMove(img_path, thresh, svs_num)
+
+map(G_OpenFileCheckMove, files)

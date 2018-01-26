@@ -3,7 +3,7 @@
 import pdb
 from optparse import OptionParser
 from keras.models import Sequential
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adam
 from keras.layers import Input, Dense, Convolution2D, MaxPooling2D, AveragePooling2D, ZeroPadding2D, Dropout, Flatten, merge, Reshape, Activation
 from keras.layers.normalization import BatchNormalization
 from keras.models import Model
@@ -16,6 +16,8 @@ import numpy as np
 from load_dataICIAR import load_ICIAR_data
 import pandas as pd
 from keras.preprocessing.image import ImageDataGenerator
+
+from keras.callbacks import EarlyStopping
 
 
 def identity_block(input_tensor, kernel_size, filters, stage, block):
@@ -167,8 +169,9 @@ def resnet50_model(img_rows, img_cols, color_type=1, num_classes=None, lr=1e-3, 
     model = Model(img_input, x_newfc)
 
     # Learning rate is changed to 0.001
-    sgd = SGD(lr=lr, decay=w_d, momentum=mom, nesterov=True)
-    model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
+    # sgd = SGD(lr=lr, decay=w_d, momentum=mom, nesterov=True)
+    adam = Adam(lr=lr, beta_1=0.9, beta_2=0.999, epsilon=None, decay=w_d, amsgrad=False)
+    model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
   
     return model
 
@@ -201,7 +204,7 @@ if __name__ == '__main__':
     val_scores = np.zeros(n_split)
     score = np.zeros(n_split, dtype='float')
     acc = np.zeros(n_split, dtype='float')
-    
+    score_epoch = np.zeros(shape=(n_split, nb_epoch), dtype='float')
     for k in range(1, 11):
         train_index = np.where(id_n != k)[0]
         test_index = np.where(id_n == k)[0]
@@ -211,8 +214,10 @@ if __name__ == '__main__':
         lr = options.lr
         mom = options.momentum
         w_d = options.weight_decay
-        model = resnet50_model(img_rows, img_cols, channel, num_classes, lr, mom, w_d)
-
+        model = resnet50_model(img_rows, img_cols, channel, num_classes, lr)
+        # earlystop = EarlyStopping(monitor='val_acc', min_delta=0.0001, patience=5, \
+        #                           verbose=1, mode='auto')
+        # callbacks_list = [earlystop]
         # Start Fine-tuning
         train_datagen = ImageDataGenerator(rotation_range=180,
             width_shift_range=0.1,
@@ -224,19 +229,21 @@ if __name__ == '__main__':
             horizontal_flip=True,
             vertical_flip=True)
         
-        train_generator = train_datagen.flow(X_train, y_train, batch_size=batch_size)
-        model.fit_generator(train_generator, steps_per_epoch=len(X_train) / batch_size, epochs=nb_epoch, validation_data=(X_test, y_test), shuffle=True)
-       # for e in range(epochs):
-       #     print('Epoch', e)
-       #     batches = 0
-       #     for x_batch, y_batch in train_generator:
-       #         model.fit(x_batch, y_batch, batch_size=batch_size)
-       #         batches += 1
-       #         if batches >= len(X_train) / batch_size:
-       #             # we need to break the loop by hand because
-       #             # the generator loops indefinitely
-       #             break
-
+        train_generator = train_datagen.flow(X_train, y_train, batch_size=batch_size, shuffle=True) #, save_to_dir='./check')
+#        model.fit_generator(train_generator, steps_per_epoch=len(X_train) / batch_size, epochs=nb_epoch, validation_data=(X_test, y_test), shuffle=True)
+        for e in range(nb_epoch):
+            print('Epoch', e)
+            batches = 0
+            for x_batch, y_batch in train_generator:
+                model.fit(x_batch, y_batch, batch_size=batch_size, verbose=0)
+                batches += 1
+                if batches >= len(X_train) / batch_size:
+                    # we need to break the loop by hand because
+                    # the generator loops indefinitely
+                    break
+            predictions_valid = model.predict(X_test, batch_size=batch_size, verbose=1)
+            score_epoch[k-1, e] = log_loss(y_test, predictions_valid)
+            print "Loss: ", score_epoch[k-1, e]
         # Make predictions
         predictions_valid = model.predict(X_test, batch_size=batch_size, verbose=1)
 
@@ -246,6 +253,6 @@ if __name__ == '__main__':
         fold_name = options.output_mod
         fold_name = fold_name.replace('.h5', '_fold_{}.h5').format(k)
         model.save(fold_name)
-
+    np.save('score_epoch.npy', score_epoch)
     pd.DataFrame({'cross-entropy': score, 'accuracy': acc}).to_csv(options.output)
 
