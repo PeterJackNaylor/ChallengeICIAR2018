@@ -1,5 +1,5 @@
 
-IMAGE_FOLD = file('/data/users/pnaylor/ICIAR2018/partB/WSI')
+IMAGE_FOLD = file('/share/data40T_v2/Peter/ICIAR2018/partB/WSI')
 NUMBER = Channel.from(1..10)
 SAMPLES_PER_CLASS = 1000
 CUTWSI = file('cutWSI.py')
@@ -102,7 +102,7 @@ process deepTrain {
     function pyglib {
         /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/bin/python \$@
     }
-    python $py --split $split --epoch $epoch --bs $batch_size --lr $lr --output ${lr}__adam.csv --output_mod ${lr}__adam.h5 --mean $mean
+    pyglib $py --split $split --epoch $epoch --bs $batch_size --lr $lr --output ${lr}__adam.csv --output_mod ${lr}__adam.h5 --mean $mean
     """
 }
 
@@ -124,6 +124,6 @@ process PrepareWSI {
     function pyglib {
         /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/bin/python \$@
     }
-    python $py --mean $mean --fold $fold 
+    pyglib $py --mean $mean --fold $fold 
     """
 }
