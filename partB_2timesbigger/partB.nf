@@ -72,8 +72,8 @@ EPOCH = 10
 BATCH = 64
 RESNET_50 = file('resnet_50.py')
 PRETRAINED = file('imagenet_models')
-//LEARNING_RATE= [0.0001, 0.00001]
-LEARNING_RATE= [0.01, 0.001, 0.0001, 0.00001]
+LEARNING_RATE= [0.0001, 0.00001]
+//LEARNING_RATE= [0.01, 0.001, 0.0001, 0.00001]
 MOMENTUM = [0.9, 0.99]
 WEIGHT_DECAY = [0.00005]
 process deepTrain {
@@ -81,8 +81,8 @@ process deepTrain {
     publishDir "../../partB_2/ResultTest", overwrite:true
     queue 'cuda.q'
     maxForks 1
-    beforeScript "source /data/users/pnaylor/CUDA_LOCK/.whichNODE"
-    afterScript "source /data/users/pnaylor/CUDA_LOCK/.freeNODE"
+    beforeScript "source /share/data40T_v2/Peter/CUDA_LOCK/.whichNODE"
+    afterScript "source /share/data40T_v2/Peter/CUDA_LOCK/.freeNODE"
     input:
     file mean from MEAN_ARRAY
     file py from RESNET_50
