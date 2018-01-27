@@ -98,7 +98,7 @@ process deepTrain {
 //    each w_d from WEIGHT_DECAY
     output:
     file "${lr}__adam.csv" into RES_TRAIN
-    file "*.h5" into MODEL_WEIGHTS
+    set num, file("*.h5") into MODEL_WEIGHTS
 
     """
     function pyglib {
@@ -118,7 +118,7 @@ process PrepareWSI {
     file mean from MEAN_ARRAY
     file py from PredWSI
     file fold from IMAGE_FOLD
-    file weights from MODEL_WEIGHTS
+    set num, file(weights) from MODEL_WEIGHTS
     output:
     file "*.png" into STEP2INPUT
 
@@ -127,6 +127,6 @@ process PrepareWSI {
     function pyglib {
         /share/apps/glibc-2.20/lib/ld-linux-x86-64.so.2 --library-path /share/apps/glibc-2.20/lib:$LD_LIBRARY_PATH:/usr/lib64/:/usr/local/cuda/lib64/:/cbio/donnees/pnaylor/cuda/lib64:/usr/lib64/nvidia /cbio/donnees/pnaylor/anaconda2/envs/cpu_tf/bin/python \$@
     }
-    pyglib $py --mean $mean --fold $fold 
+    pyglib $py --mean $mean --fold $fold --k $num
     """
 }
