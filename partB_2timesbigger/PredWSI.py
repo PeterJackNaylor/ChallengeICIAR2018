@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import openslide
 import pdb
 from optparse import OptionParser
 import numpy as np
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     mean = np.load(options.mean)
 
     for num in range(1, 11):
-        svs_path = join(options.path, 'A{:02}.svs'.format(num))
+        svs_path = join(options.fold, 'A{:02}.svs'.format(num))
         WSI = openslide.OpenSlide(svs_path)
 
         WEIGHTS = glob("*_fold_{}.h5".format(num))[0]
@@ -55,14 +55,14 @@ if __name__ == '__main__':
         for x in range(0, whole_img.shape[0], s_0_x):
             for y in range(0, whole_img.shape[1], s_0_y):
                 if mask_tissue[x, y] != 0: 
-                    img = WSI.read_region((x-s_0_x/2, y-s_0_y/2), 0, (224, 224))
+                    img = np.array(WSI.read_region((x-s_0_x/2, y-s_0_y/2), 0, (224, 224)))[:,:,0:3]
                     img = img.astype(float) - mean
                     img = np.expand_dims(img, axis=0)
                     res = model.predict(img)
-                    class_0[x, y] = res[0]
-                    class_1[x, y] = res[1]
-                    class_2[x, y] = res[2]
-                    class_3[x, y] = res[3]
+                    class_0[x, y] = res[0][0]
+                    class_1[x, y] = res[0][1]
+                    class_2[x, y] = res[0][2]
+                    class_3[x, y] = res[0][3]
 
         save_name = 'class_{}_for_image_{}'
         imsave(save_name.format(0, num), class_0)

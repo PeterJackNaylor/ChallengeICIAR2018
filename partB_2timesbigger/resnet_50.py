@@ -19,7 +19,7 @@ from keras.preprocessing.image import ImageDataGenerator
 import sys
 sys.path.append('..')
 from utils.GeneratorKeras import ICIARSequence, ICIARSequenceTest
-from keras.callbacks import EarlyStopping
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 
 def identity_block(input_tensor, kernel_size, filters, stage, block):
@@ -191,6 +191,7 @@ if __name__ == '__main__':
     parser.add_option('--bs', dest="bs", type="int")
     parser.add_option('--mean', dest="mean", type="str")
     parser.add_option('--k', dest="k", type="int")
+    parser.add_option('--path', dest="path", type="str")
     (options, args) = parser.parse_args()
 
     img_rows, img_cols = 224, 224 # Resolution of inputs
@@ -209,14 +210,23 @@ if __name__ == '__main__':
     model = resnet50_model(img_rows, img_cols, channel, num_classes, lr)
     earlystop = EarlyStopping(monitor='val_acc', min_delta=0.0001, patience=5, \
                                verbose=1, mode='auto')
-    callbacks_list = [earlystop]
+    fold_name = options.output_mod
+    fold_name = fold_name.replace('.h5', '_fold_{}.h5').format(k)
+    best_model_saver = ModelCheckpoint(fold_name, 
+                                        monitor='val_loss', 
+                                        verbose=0,
+                                        save_best_only=True, 
+                                        save_weights_only=False,
+                                        mode='auto',
+                                        period=1)
+    callbacks_list = [earlystop, best_model_saver]
 
     
     model.fit_generator(train_datagen, 
                         steps_per_epoch=train_datagen.__len__(), 
                         epochs=nb_epoch,
-                        max_queue_size=1000, 
-                        workers=16, 
+                        max_queue_size=20, 
+                        workers=10, 
                         use_multiprocessing=False,
                         validation_data=valid_datagen,
                         validation_steps=valid_datagen.__len__(),
@@ -227,8 +237,5 @@ if __name__ == '__main__':
     loss = np.array([loss])
     acc = np.array([acc])
 
-    fold_name = options.output_mod
-    fold_name = fold_name.replace('.h5', '_fold_{}.h5').format(k)
-    model.save(fold_name)
     pd.DataFrame({'cross-entropy': loss, 'accuracy': acc}).to_csv(options.output)
 

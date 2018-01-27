@@ -4,7 +4,7 @@ import numpy as np
 import math
 from keras.utils import Sequence
 from glob import glob
-from os.path import join
+from os.path import join, basename
 import pdb
 from keras.preprocessing.image import ImageDataGenerator
 
@@ -41,14 +41,13 @@ class ICIARSequence(Sequence):
         ALL_FOLD = np.array(ALL_FOLD)
 
         def cut_name(name):
-            return int(name.split('_')[0])
+            return int(basename(name).split('_')[0])
 
         def cut_name_assign(name):
-            c = int(name.split('_')[0])
+            c = int(basename(name).split('_')[0])
             arr = np.zeros(self.num_classes, dtype="uint8")
             arr[c] = 1
             return arr
-
 
         y_label = map(cut_name, ALL_FOLD)
         y_onehot = map(cut_name_assign, ALL_FOLD)
@@ -58,8 +57,8 @@ class ICIARSequence(Sequence):
         np.random.shuffle(shuffle_index)
         self.folder = ALL_FOLD[shuffle_index]
 
-        self.y = y_label[shuffle_index]
-        self.y_onehot = y_onehot[shuffle_index]
+        self.y = np.array(y_label)[shuffle_index]
+        self.y_onehot = np.array(y_onehot)[shuffle_index]
 
     def _init_random_generator(self):
         datagen_args = dict(rotation_range=180,
@@ -87,7 +86,7 @@ class ICIARSequence(Sequence):
         batch_y = np.array(batch_y)
         if self.mean is not None:
             batch_x[:] -= self.mean
-        return batch_x, batch_y
+        return batch_x, batch_y_onehot
 
 class ICIARSequenceTest(ICIARSequence):
     def _init_folder(self):
@@ -96,10 +95,10 @@ class ICIARSequenceTest(ICIARSequence):
         ALL_FOLD = np.array(ALL_FOLD)
 
         def cut_name(name):
-            return int(name.split('_')[0])
+            return int(basename(name).split('_')[0])
 
         def cut_name_assign(name):
-            c = int(name.split('_')[0])
+            c = int(basename(name).split('_')[0])
             arr = np.zeros(self.num_classes, dtype="uint8")
             arr[c] = 1
             return arr
@@ -110,11 +109,11 @@ class ICIARSequenceTest(ICIARSequence):
         self.n = len(ALL_FOLD)
 
         self.folder = ALL_FOLD
-        self.y = y_label
-        self.y_onehot = y_onehot
+        self.y = np.array(y_label)
+        self.y_onehot = np.array(y_onehot)
 
     def _init_random_generator(self):
-        print "no random generator for test, Not implemented")
+        print "no random generator for test, Not implemented"
     def __getitem__(self, idx):
         batch_name = self.folder[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_y = self.y[idx * self.batch_size:(idx + 1) * self.batch_size]
@@ -127,4 +126,4 @@ class ICIARSequenceTest(ICIARSequence):
         batch_y = np.array(batch_y)
         if self.mean is not None:
             batch_x[:] -= self.mean
-        return batch_x, batch_y
+        return batch_x, batch_y_onehot
