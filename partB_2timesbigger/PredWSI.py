@@ -45,10 +45,10 @@ if __name__ == '__main__':
     mask_tissue = img_as_ubyte(mask_tissue)
     mask_tissue[mask_tissue > 0] = 255
 
-    class_0 = np.zeros_like(whole_img[:,:,0])
-    class_1 = np.zeros_like(whole_img[:,:,0])
-    class_2 = np.zeros_like(whole_img[:,:,0])
-    class_3 = np.zeros_like(whole_img[:,:,0])
+    class_0 = np.zeros_like(whole_img[:,:,0], dtype=float)
+    class_1 = np.zeros_like(whole_img[:,:,0], dtype=float)
+    class_2 = np.zeros_like(whole_img[:,:,0], dtype=float)
+    class_3 = np.zeros_like(whole_img[:,:,0], dtype=float)
     s_0_x, s_0_y = UOS.get_size(WSI, 448, 448, 0, last_dim_n)
     model = load_model(WEIGHTS)
 
@@ -56,7 +56,6 @@ if __name__ == '__main__':
         for y in range(0, whole_img.shape[1], s_0_y):
             if mask_tissue[x, y] != 0:
                 x_0, y_0 = UOS.get_X_Y(WSI, y, x, 0)
-                pdb.set_trace()
                 img = resize(np.array(WSI.read_region((x, y), 0, (448, 448)))[:,:,0:3], (224, 224))
                 img = img.astype(float) - mean
                 img = np.expand_dims(img, axis=0)
@@ -65,9 +64,8 @@ if __name__ == '__main__':
                 class_1[x, y] = res[0][1]
                 class_2[x, y] = res[0][2]
                 class_3[x, y] = res[0][3]
-
-    save_name = 'class_{}_for_image_{}'
-    imsave(save_name.format(0, num), class_0)
-    imsave(save_name.format(1, num), class_1)
-    imsave(save_name.format(2, num), class_2)
-    imsave(save_name.format(3, num), class_3)
+    save_name = 'class_{}_for_image_{}.png'
+    imsave(save_name.format(0, num), img_as_ubyte(class_0))
+    imsave(save_name.format(1, num), img_as_ubyte(class_1))
+    imsave(save_name.format(2, num), img_as_ubyte(class_2))
+    imsave(save_name.format(3, num), img_as_ubyte(class_3))
