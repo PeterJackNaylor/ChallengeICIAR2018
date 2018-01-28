@@ -55,8 +55,8 @@ if __name__ == '__main__':
     for x in range(0, whole_img.shape[0], s_0_x):
         for y in range(0, whole_img.shape[1], s_0_y):
             if mask_tissue[x, y] != 0:
-                x_0, y_0 = UOS.get_X_Y(WSI, y, x, 0)
-                img = resize(np.array(WSI.read_region((x, y), 0, (448, 448)))[:,:,0:3], (224, 224))
+                x_0, y_0 = UOS.get_X_Y(WSI, y, x, last_dim_n)
+                img = resize(np.array(WSI.read_region((x_0, y_0), 0, (448, 448)))[:,:,0:3], (224, 224))
                 img = img_as_ubyte(img).astype(float) - mean
                 img = np.expand_dims(img, axis=0)
                 res = model.predict(img)
