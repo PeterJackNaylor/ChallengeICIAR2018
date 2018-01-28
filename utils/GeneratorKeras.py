@@ -88,8 +88,8 @@ class ICIARSequence(Sequence):
             batch_x[:] -= self.mean
         return batch_x, batch_y_onehot
     def weight_dic(self):
-        class_weight = class_weight.compute_class_weight('balanced', np.unique(self.y), self.y)
-        return class_weight
+        dic = class_weight.compute_class_weight('balanced', np.unique(self.y), self.y)
+        return dic
 
 class ICIARSequenceTest(ICIARSequence):
     def _init_folder(self):

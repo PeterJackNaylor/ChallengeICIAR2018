@@ -208,7 +208,7 @@ if __name__ == '__main__':
     mom = options.momentum
     w_d = options.weight_decay
     model = resnet50_model(img_rows, img_cols, channel, num_classes, lr)
-    earlystop = EarlyStopping(monitor='val_acc', min_delta=0.0001, patience=5, \
+    earlystop = EarlyStopping(monitor='val_acc', min_delta=0.0001, patience=10, \
                                verbose=1, mode='auto')
     fold_name = options.output_mod
     fold_name = fold_name.replace('.h5', '_fold_{}.h5').format(k)
