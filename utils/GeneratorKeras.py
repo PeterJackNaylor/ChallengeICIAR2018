@@ -7,7 +7,7 @@ from glob import glob
 from os.path import join, basename
 import pdb
 from keras.preprocessing.image import ImageDataGenerator
-
+from sklearn.utils import class_weight
 
 PATH = './valid_*/*.png'
 
@@ -87,6 +87,9 @@ class ICIARSequence(Sequence):
         if self.mean is not None:
             batch_x[:] -= self.mean
         return batch_x, batch_y_onehot
+    def weight_dic(self):
+        class_weight = class_weight.compute_class_weight('balanced', np.unique(self.y), self.y)
+        return class_weight
 
 class ICIARSequenceTest(ICIARSequence):
     def _init_folder(self):

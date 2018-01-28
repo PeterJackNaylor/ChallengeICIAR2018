@@ -56,13 +56,10 @@ if __name__ == '__main__':
         for y in range(0, whole_img.shape[1], s_0_y):
             if mask_tissue[x, y] != 0:
                 x_0, y_0 = UOS.get_X_Y(WSI, y, x, last_dim_n)
-                print x_0, y_0
                 img = resize(np.array(WSI.read_region((x_0, y_0), 0, (448, 448)))[:,:,0:3], (224, 224))
-                imsave('{}_{}.png'.format(x,y), img_as_ubyte(img))
                 img = img_as_ubyte(img).astype(float) - mean
                 img = np.expand_dims(img, axis=0)
                 res = model.predict(img)
-                print res
                 class_0[x:(x + s_0_x), y:(y + s_0_y)] = res[0][0]
                 class_1[x:(x + s_0_x), y:(y + s_0_y)] = res[0][1]
                 class_2[x:(x + s_0_x), y:(y + s_0_y)] = res[0][2]

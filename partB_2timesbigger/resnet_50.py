@@ -221,9 +221,10 @@ if __name__ == '__main__':
                                         period=1)
     callbacks_list = [earlystop, best_model_saver]
 
-    
+
     model.fit_generator(train_datagen, 
                         steps_per_epoch=train_datagen.__len__(), 
+                        class_weight=train_datagen.weight_dic(),
                         epochs=nb_epoch,
                         max_queue_size=20, 
                         workers=10, 

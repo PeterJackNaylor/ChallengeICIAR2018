@@ -68,7 +68,7 @@ process mean {
 
 
 SPLIT = 10
-EPOCH = 10
+EPOCH = 20
 BATCH = 64
 RESNET_50 = file('resnet_50.py')
 PRETRAINED = file('imagenet_models')
