@@ -60,10 +60,10 @@ if __name__ == '__main__':
                 img = img.astype(float) - mean
                 img = np.expand_dims(img, axis=0)
                 res = model.predict(img)
-                class_0[x, y] = res[0][0]
-                class_1[x, y] = res[0][1]
-                class_2[x, y] = res[0][2]
-                class_3[x, y] = res[0][3]
+                class_0[x + s_0_x, y + s_0_y] = res[0][0]
+                class_1[x + s_0_x, y + s_0_y] = res[0][1]
+                class_2[x + s_0_x, y + s_0_y] = res[0][2]
+                class_3[x + s_0_x, y + s_0_y] = res[0][3]
     save_name = 'class_{}_for_image_{}.png'
     imsave(save_name.format(0, num), img_as_ubyte(class_0))
     imsave(save_name.format(1, num), img_as_ubyte(class_1))
