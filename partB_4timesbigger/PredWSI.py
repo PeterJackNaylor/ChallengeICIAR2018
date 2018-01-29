@@ -49,14 +49,14 @@ if __name__ == '__main__':
     class_1 = np.zeros_like(whole_img[:,:,0], dtype=float)
     class_2 = np.zeros_like(whole_img[:,:,0], dtype=float)
     class_3 = np.zeros_like(whole_img[:,:,0], dtype=float)
-    s_0_x, s_0_y = UOS.get_size(WSI, 448, 448, 0, last_dim_n)
+    s_0_x, s_0_y = UOS.get_size(WSI, 2 * 448, 2 * 448, 0, last_dim_n)
     model = load_model(WEIGHTS)
 
     for x in range(0, whole_img.shape[0], s_0_x):
         for y in range(0, whole_img.shape[1], s_0_y):
             if mask_tissue[x, y] != 0:
                 x_0, y_0 = UOS.get_X_Y(WSI, y, x, last_dim_n)
-                img = resize(np.array(WSI.read_region((x_0, y_0), 0, (448, 448)))[:,:,0:3], (224, 224))
+                img = resize(np.array(WSI.read_region((x_0, y_0), 0, (448 * 2, 448 * 2)))[:,:,0:3], (224, 224))
                 img = img_as_ubyte(img).astype(float) - mean
                 img = np.expand_dims(img, axis=0)
                 res = model.predict(img)
