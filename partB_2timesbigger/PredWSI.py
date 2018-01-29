@@ -65,7 +65,7 @@ if __name__ == '__main__':
                 class_2[x:(x + s_0_x), y:(y + s_0_y)] = res[0][2]
                 class_3[x:(x + s_0_x), y:(y + s_0_y)] = res[0][3]
     save_name = WEIGHTS.replace("fold_{}.h5".format(num), 'image_{}_class_{}.png')
-    imsave(save_name.format(0, num), img_as_ubyte(class_0))
-    imsave(save_name.format(1, num), img_as_ubyte(class_1))
-    imsave(save_name.format(2, num), img_as_ubyte(class_2))
-    imsave(save_name.format(3, num), img_as_ubyte(class_3))
+    imsave(save_name.format(num, 0), img_as_ubyte(class_0))
+    imsave(save_name.format(num, 1), img_as_ubyte(class_1))
+    imsave(save_name.format(num, 2), img_as_ubyte(class_2))
+    imsave(save_name.format(num, 3), img_as_ubyte(class_3))
