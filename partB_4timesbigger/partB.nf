@@ -7,7 +7,7 @@ CUTWSI = file('cutWSI.py')
 
 process cutWSI {
     clusterOptions "-S /bin/bash"
-    publishDir "../../partB_2/", pattern:"A*.png", overwrite:true
+    publishDir "../../partB_4/", pattern:"A*.png", overwrite:true
     queue 'all.q'
     input:
     file fold from IMAGE_FOLD
@@ -29,7 +29,7 @@ REMOVEWHITEPICS = file('removeWhitePics.py')
 
 process removeWhitePics {
     clusterOptions "-S /bin/bash"
-    publishDir "../../partB_2/samples", overwrite:true
+    publishDir "../../partB_4/samples", overwrite:true
     queue 'all.q'
     input:
     file py from REMOVEWHITEPICS
@@ -45,7 +45,7 @@ process removeWhitePics {
 
 process mean {
     clusterOptions "-S /bin/bash"
-    publishDir "../../partB_2/meta", overwrite:true
+    publishDir "../../partB_4/meta", overwrite:true
     queue 'all.q'
     input:
     file _ from INPUT_VALID .toList()
@@ -79,7 +79,7 @@ WEIGHT_DECAY = [0.00005]
 NUMS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 process deepTrain {
     clusterOptions "-S /bin/bash"
-    publishDir "../../partB_2/ResultTest", overwrite:true
+    publishDir "../../partB_4/ResultTest", overwrite:true
     queue 'cuda.q'
     maxForks 2
     beforeScript "source /share/data40T_v2/Peter/CUDA_LOCK/.whichNODE"
